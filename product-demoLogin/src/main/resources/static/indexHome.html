@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EDÉN Inmobiliaria</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        :root {
+            --primary-light: #c7fae9;
+            --primary: #10bb82;
+            --white: #ffffff;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar {
+            background-color: var(--white);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 1.8rem;
+        }
+        
+        .nav-link {
+            color: #333;
+            font-weight: 500;
+            margin: 0 10px;
+            transition: color 0.3s;
+        }
+        
+        .nav-link:hover {
+            color: var(--primary);
+        }
+        
+        .btn-primary {
+            background-color: var(--primary);
+            border-color: var(--primary);
+            border-radius: 30px;
+            padding: 10px 25px;
+            font-weight: 600;
+        }
+        
+        .btn-primary:hover {
+            background-color: #0daa75;
+            border-color: #0daa75;
+        }
+        
+        .btn-outline-primary {
+            color: var(--primary);
+            border-color: var(--primary);
+            border-radius: 30px;
+            padding: 10px 25px;
+            font-weight: 600;
+        }
+        
+        .btn-outline-primary:hover {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        /* Nuevo estilo para el botón de cerrar sesión */
+        .btn-logout {
+            color: #dc3545;
+            border-color: #dc3545;
+            border-radius: 30px;
+            padding: 10px 25px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+        
+        .btn-logout:hover {
+            background-color: #dc3545;
+            color: white;
+        }
+        
+        .hero-section {
+            background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&h=800&q=80');
+            background-size: cover;
+            background-position: center;
+            height: 500px;
+            display: flex;
+            align-items: center;
+            color: white;
+            border-radius: 15px;
+            margin-top: 20px;
+        }
+        
+        .search-box {
+            background-color: var(--white);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .form-control, .form-select {
+            border-radius: 30px;
+            padding: 12px 20px;
+            border: 1px solid #ddd;
+        }
+        
+        .property-card {
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            transition: transform 0.3s;
+            margin-bottom: 25px;
+        }
+        
+        .property-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .property-card img {
+            height: 200px;
+            object-fit: cover;
+        }
+        
+        .property-price {
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+        
+        .property-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background-color: var(--primary);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 30px;
+            font-weight: 600;
+        }
+        
+        .section-title {
+            position: relative;
+            margin-bottom: 40px;
+            font-weight: 700;
+        }
+        
+        .section-title:after {
+            content: '';
+            display: block;
+            width: 50px;
+            height: 3px;
+            background-color: var(--primary);
+            margin-top: 15px;
+        }
+        
+        .bg-light-primary {
+            background-color: var(--primary-light);
+        }
+        
+        footer {
+            background-color: #333;
+            color: white;
+            padding: 60px 0 30px;
+        }
+        
+        .social-icon {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            background-color: var(--primary);
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 40px;
+            margin-right: 10px;
+            transition: background-color 0.3s;
+        }
+        
+        .social-icon:hover {
+            background-color: #0daa75;
+            color: white;
+        }
+        
+        /* Mapa Styles */
+        #mapSection {
+            padding: 60px 0;
+        }
+        
+        #propertyMap {
+            height: 500px;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-top: 20px;
+        }
+        
+        .map-search-container {
+            background-color: var(--white);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .map-controls {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        
+        .map-filter-btn {
+            background-color: var(--primary-light);
+            border: none;
+            border-radius: 30px;
+            padding: 8px 20px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .map-filter-btn.active, .map-filter-btn:hover {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        /* Estilos para los marcadores del mapa */
+        .custom-marker {
+            background-color: var(--primary);
+            width: 30px;
+            height: 30px;
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        
+        .custom-marker i {
+            transform: rotate(45deg);
+            color: white;
+        }
+        
+        .leaflet-popup-content-wrapper {
+            border-radius: 8px;
+        }
+        
+        .leaflet-popup-content {
+            margin: 12px;
+        }
+        
+        .map-popup-content img {
+            width: 100%;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .map-popup-content .price {
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="#">EDÉN</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#">INICIO</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">VENTA</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">ALQUILER</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">PERMUTA</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">ASESORES</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">CONÓCENOS</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">CONTÁCTENOS</a>
+                    </li>
+                </ul>
+                <div class="d-flex">
+                    <button class="btn btn-outline-primary me-2">Iniciar Sesión</button>
+                    <button class="btn btn-primary me-2">Registrarse</button>
+                    <!-- Botón de Cerrar Sesión añadido -->
+                    <button class="btn btn-logout" id="logoutBtn">
+                        <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="container mb-5">
+        <div class="hero-section">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-6">
+                        <h1 class="display-4 fw-bold mb-4">Encuentra tu propiedad ideal</h1>
+                        <p class="lead mb-4">Casas, apartamentos, locales, lotes y fincas para todos tus necesidades.</p>
+                        <button class="btn btn-primary btn-lg">Explorar Propiedades</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Advanced Search -->
+    <section class="container mb-5">
+        <div class="search-box">
+            <h2 class="mb-4">BÚSQUEDA AVANZADA</h2>
+            <form>
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Ciudad</label>
+                        <select class="form-select">
+                            <option selected>Todas</option>
+                            <option>Bogotá</option>
+                            <option>Medellín</option>
+                            <option>Cali</option>
+                            <option>Barranquilla</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Tipo de inmueble</label>
+                        <select class="form-select">
+                            <option selected>Todos</option>
+                            <option>Casa</option>
+                            <option>Apartamento</option>
+                            <option>Local</option>
+                            <option>Lote</option>
+                            <option>Finca</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Estado de propiedad</label>
+                        <select class="form-select">
+                            <option selected>Todos</option>
+                            <option>Nuevo</option>
+                            <option>Usado</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Tipo de negocio</label>
+                        <select class="form-select">
+                            <option selected>Todos</option>
+                            <option>Venta</option>
+                            <option>Alquiler</option>
+                            <option>Permuta</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Habitaciones</label>
+                        <select class="form-select">
+                            <option selected>Cualquiera</option>
+                            <option>1+</option>
+                            <option>2+</option>
+                            <option>3+</option>
+                            <option>4+</option>
+                            <option>5+</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Baños</label>
+                        <select class="form-select">
+                            <option selected>Cualquiera</option>
+                            <option>1+</option>
+                            <option>2+</option>
+                            <option>3+</option>
+                            <option>4+</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Precio desde</label>
+                        <input type="text" class="form-control" placeholder="$ Mínimo">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Precio hasta</label>
+                        <input type="text" class="form-control" placeholder="$ Máximo">
+                    </div>
+                    <div class="col-12 text-center mt-4">
+                        <button type="submit" class="btn btn-primary px-5">BUSCAR</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <!-- Map Section -->
+    <section id="mapSection" class="container mb-5">
+        <h2 class="section-title">Buscar en el Mapa</h2>
+        
+        <div class="map-search-container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <div class="input-group">
+                        <input type="text" class="form-control" placeholder="Buscar dirección, barrio o ciudad...">
+                        <button class="btn btn-primary" type="button">
+                            <i class="bi bi-search"></i> Buscar
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-4 text-end">
+                    <button class="btn btn-outline-primary">
+                        <i class="bi bi-geo-alt"></i> Mi ubicación
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="map-controls">
+            <div>
+                <button class="btn map-filter-btn active">Todos</button>
+                <button class="btn map-filter-btn">Venta</button>
+                <button class="btn map-filter-btn">Alquiler</button>
+                <button class="btn map-filter-btn">Permuta</button>
+            </div>
+            <div>
+                <button class="btn map-filter-btn">
+                    <i class="bi bi-filter"></i> Filtros
+                </button>
+            </div>
+        </div>
+        
+        <div id="propertyMap"></div>
+    </section>
+
+    <!-- Featured Properties -->
+    <section class="container mb-5">
+        <h2 class="section-title">Propiedades Destacadas</h2>
+        <div class="row">
+            <!-- Property 1 -->
+            <div class="col-md-4">
+                <div class="property-card card">
+                    <div class="position-relative">
+                        <img src="https://images.unsplash.com/photo-1568605114967-8130f3a36994?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&h=400&q=80" class="card-img-top" alt="Casa moderna">
+                        <span class="property-badge">VENTA</span>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="property-price">$ 590.000.000</h5>
+                        <h6 class="card-title">Casa en Chapinero, Bogotá</h6>
+                        <p class="card-text">Hermosa casa con amplios espacios, ideal para familia.</p>
+                        <div class="d-flex justify-content-between">
+                            <span><i class="bi bi-house-door"></i> Casa</span>
+                            <span><i class="bi bi-geo-alt"></i> 180 m²</span>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between">
+                            <span><i class="bi bi-door-closed"></i> 4 Habitaciones</span>
+                            <span><i class="bi bi-droplet"></i> 3 Baños</span>
+                        </div>
+                        <div class="d-grid gap-2 mt-3">
+                            <button class="btn btn-outline-primary">Ver Detalles</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Property 2 -->
+            <div class="col-md-4">
+                <div class="property-card card">
+                    <div class="position-relative">
+                        <img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&h=400&q=80" class="card-img-top" alt="Apartamento">
+                        <span class="property-badge">ALQUILER</span>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="property-price">$ 2.500.000/mes</h5>
+                        <h6 class="card-title">Apartamento en El Poblado, Medellín</h6>
+                        <p class="card-text">Moderno apartamento con vista panorámica y amenities.</p>
+                        <div class="d-flex justify-content-between">
+                            <span><i class="bi bi-building"></i> Apartamento</span>
+                            <span><i class="bi bi-geo-alt"></i> 95 m²</span>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between">
+                            <span><i class="bi bi-door-closed"></i> 3 Habitaciones</span>
+                            <span><i class="bi bi-droplet"></i> 2 Baños</span>
+                        </div>
+                        <div class="d-grid gap-2 mt-3">
+                            <button class="btn btn-outline-primary">Ver Detalles</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Property 3 -->
+            <div class="col-md-4">
+                <div class="property-card card">
+                    <div class="position-relative">
+                        <img src="https://images.unsplash.com/photo-1580587771525-78b9dba3b914?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&h=400&q=80" class="card-img-top" alt="Casa campestre">
+                        <span class="property-badge">PERMUTA</span>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="property-price">$ 890.000.000</h5>
+                        <h6 class="card-title">Finca en La Calera, Cundinamarca</h6>
+                        <p class="card-text">Hermosa finca a 30 minutos de Bogotá, perfecta para descanso.</p>
+                        <div class="d-flex justify-content-between">
+                            <span><i class="bi bi-tree"></i> Finca</span>
+                            <span><i class="bi bi-geo-alt"></i> 5000 m²</span>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between">
+                            <span><i class="bi bi-door-closed"></i> 5 Habitaciones</span>
+                            <span><i class="bi bi-droplet"></i> 4 Baños</span>
+                        </div>
+                        <div class="d-grid gap-2 mt-3">
+                            <button class="btn btn-outline-primary">Ver Detalles</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Call to Action -->
+    <section class="bg-light-primary py-5 mb-5">
+        <div class="container text-center">
+            <h2 class="mb-4">¿Necesitas ayuda para encontrar tu propiedad ideal?</h2>
+            <p class="lead mb-4">Nuestros asesores están listos para ayudarte a encontrar la propiedad perfecta para ti.</p>
+            <button class="btn btn-primary btn-lg">Contactar un Asesor</button>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <h4 class="mb-4">EDÉN Inmobiliaria</h4>
+                    <p>Ofrecemos el mejor servicio inmobiliario con profesionalismo y dedicación para ayudarte a encontrar tu hogar ideal.</p>
+                </div>
+                <div class="col-md-2 mb-4">
+                    <h5 class="mb-4">Enlaces Rápidos</h5>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><a href="#" class="text-white text-decoration-none">Inicio</a></li>
+                        <li class="mb-2"><a href="#" class="text-white text-decoration-none">Venta</a></li>
+                        <li class="mb-2"><a href="#" class="text-white text-decoration-none">Alquiler</a></li>
+                        <li class="mb-2"><a href="#" class="text-white text-decoration-none">Permuta</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <h5 class="mb-4">Contacto</h5>
+                    <p><i class="bi bi-geo-alt me-2"></i> Cra 15 # 88-64, Bogotá</p>
+                    <p><i class="bi bi-telephone me-2"></i> (601) 345 6789</p>
+                    <p><i class="bi bi-envelope me-2"></i> info@edeninmobiliaria.com</p>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <h5 class="mb-4">Síguenos</h5>
+                    <a href="#" class="social-icon"><i class="bi bi-facebook"></i></a>
+                    <a href="#" class="social-icon"><i class="bi bi-instagram"></i></a>
+                    <a href="#" class="social-icon"><i class="bi bi-twitter"></i></a>
+                    <a href="#" class="social-icon"><i class="bi bi-linkedin"></i></a>
+                </div>
+            </div>
+            <hr class="mt-4 mb-4">
+            <div class="text-center">
+                <p>© 2023 EDÉN Inmobiliaria. Todos los derechos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Inicializar el mapa
+        function initMap() {
+            // Coordenadas de Bogotá
+            const bogotaCoords = [4.7110, -74.0721];
+            
+            // Crear el mapa
+            const map = L.map('propertyMap').setView(bogotaCoords, 12);
+            
+            // Añadir capa de tiles de OpenStreetMap
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+            
+            // Añadir marcadores de propiedades
+            const properties = [
+                {
+                    coords: [4.7110, -74.0721],
+                    title: "Casa en Chapinero",
+                    price: "$590.000.000",
+                    type: "Venta",
+                    image: "https://images.unsplash.com/photo-1568605114967-8130f3a36994?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&h=400&q=80",
+                    beds: 4,
+                    baths: 3,
+                    area: "180 m²"
+                },
+                {
+                    coords: [4.6980, -74.0830],
+                    title: "Apartamento en El Poblado",
+                    price: "$2.500.000/mes",
+                    type: "Alquiler",
+                    image: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&h=400&q=80",
+                    beds: 3,
+                    baths: 2,
+                    area: "95 m²"
+                },
+                {
+                    coords: [4.7250, -74.0550],
+                    title: "Finca en La Calera",
+                    price: "$890.000.000",
+                    type: "Permuta",
+                    image: "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&h=400&q=80",
+                    beds: 5,
+                    baths: 4,
+                    area: "5000 m²"
+                },
+                {
+                    coords: [4.6950, -74.0650],
+                    title: "Local Comercial",
+                    price: "$1.200.000.000",
+                    type: "Venta",
+                    image: "https://images.unsplash.com/photo-1497366811353-6870744d04b2?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&h=400&q=80",
+                    beds: 0,
+                    baths: 2,
+                    area: "250 m²"
+                },
+                {
+                    coords: [4.7050, -74.0900],
+                    title: "Apartamento Amoblado",
+                    price: "$3.200.000/mes",
+                    type: "Alquiler",
+                    image: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&h=400&q=80",
+                    beds: 2,
+                    baths: 2,
+                    area: "75 m²"
+                }
+            ];
+            
+            // Añadir marcadores al mapa
+            properties.forEach(property => {
+                // Crear un marcador personalizado
+                const customIcon = L.divIcon({
+                    className: 'custom-marker',
+                    html: `<i class="bi bi-house${property.type === 'Alquiler' ? '-heart' : (property.type === 'Permuta' ? '-exchange' : '')}"></i>`,
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 30]
+                });
+                
+                const marker = L.marker(property.coords, {icon: customIcon}).addTo(map);
+                
+                // Contenido del popup
+                const popupContent = `
+                    <div class="map-popup-content">
+                        <img src="${property.image}" alt="${property.title}">
+                        <h5>${property.title}</h5>
+                        <p class="price">${property.price}</p>
+                        <p><strong>${property.type}</strong> · ${property.beds} Hab · ${property.beds} Baño · ${property.area}</p>
+                        <button class="btn btn-primary btn-sm">Ver Detalles</button>
+                    </div>
+                `;
+                
+                marker.bindPopup(popupContent);
+            });
+            
+            // NOTA: Se ha eliminado el control de búsqueda que se agregaba dentro del mapa
+            // Solo se mantiene la barra de búsqueda principal que está arriba del mapa
+        }
+        
+        // Inicializar el mapa cuando el documento esté listo
+        document.addEventListener('DOMContentLoaded', initMap);
+        
+        // Funcionalidad para los botones de filtro
+        document.querySelectorAll('.map-filter-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                // Quitar la clase active de todos los botones
+                document.querySelectorAll('.map-filter-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                
+                // Añadir la clase active al botón clickeado
+                this.classList.add('active');
+            });
+        });
+        
+        // Funcionalidad para el botón de cerrar sesión
+        document.getElementById('logoutBtn').addEventListener('click', function() {
+            // Aquí puedes agregar la lógica para cerrar sesión
+            if (confirm('¿Estás seguro de que deseas cerrar sesión?')) {
+                alert('Sesión cerrada correctamente');
+                // Redireccionar a la página de inicio o login
+                // window.location.href = 'login.html';
+            }
+        });
+    </script>
+</body>
+</html>

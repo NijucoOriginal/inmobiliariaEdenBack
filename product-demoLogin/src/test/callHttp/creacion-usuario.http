@@ -1,0 +1,23 @@
+### Creación de Usuario - Casos de Prueba HTTP
+### Ejecutar con el servidor corriendo en http://localhost:8080
+
+### 1. Crear usuario exitoso
+POST http://localhost:9020/api/usuarios
+Content-Type: application/json
+
+{
+  "nombre": "Juan",
+  "apellido": "Pérez",
+  "documentoIdentidad": "12345678",
+  "telefono": "3001234567",
+  "email": "jsebasjava31@gmail.com",
+  "contrasena": "Admin1234@"
+}
+
+### 2. Activar cuenta de usuario
+### Activar usuario con código de activación ---agregar el código recibido por correo
+GET http://localhost:9020/api/auth/activate/7b7e04
+Accept: application/json
+
+
+

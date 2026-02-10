@@ -1,0 +1,10 @@
+### El registro y la activacion han sido exitosos, ahora se puede loguear el usuario
+POST localhost:9020/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "jsebasjava31@gmail.com",
+  "contrasena": "Admin1234@"
+}
+
+###

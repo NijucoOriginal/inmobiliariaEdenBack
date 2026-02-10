@@ -1,0 +1,53 @@
+### Endpoints de Usuario - Casos de Prueba HTTP
+### Ejecutar con el servidor corriendo en http://localhost:8080
+
+### 1. Obtener todos los usuarios
+GET http://localhost:8080/api/usuarios
+
+### 2. Obtener usuario por ID (cambiar el ID por uno existente)
+GET http://localhost:8080/api/usuarios/1
+
+### 3. Obtener usuario por email
+GET http://localhost:8080/api/usuarios/email/usuario@ejemplo.com
+
+### 4. Obtener usuario por cédula (si existe el método)
+GET http://localhost:8080/api/usuarios/cedula/1234567890
+
+### 5. Verificar si existe usuario por email
+GET http://localhost:8080/api/usuarios/existe/email/usuario@ejemplo.com
+
+### 6. Verificar si existe usuario por cédula (si existe el método)
+GET http://localhost:8080/api/usuarios/existe/cedula/1234567890
+
+### 7. Actualizar usuario por ID (cambiar el ID por uno existente)
+PUT http://localhost:8080/api/usuarios/1
+Content-Type: application/json
+
+{
+  "email": "usuario.actualizado@ejemplo.com",
+  "contrasena": "MiPasswordActualizado123!"
+}
+
+### 8. Eliminar usuario por ID (cambiar el ID por uno existente)
+DELETE http://localhost:8080/api/usuarios/1
+
+### 9. Eliminar usuario por email
+DELETE http://localhost:8080/api/usuarios/email/usuario@ejemplo.com
+
+### 10. Obtener usuario por ID inexistente (debe devolver 404)
+GET http://localhost:8080/api/usuarios/999
+
+### 11. Obtener usuario por email inexistente (debe devolver 404)
+GET http://localhost:8080/api/usuarios/email/noexiste@ejemplo.com
+
+### 12. Actualizar usuario inexistente (debe devolver 404)
+PUT http://localhost:8080/api/usuarios/999
+Content-Type: application/json
+
+{
+  "email": "usuario.inexistente@ejemplo.com",
+  "contrasena": "MiPassword123!"
+}
+
+### 13. Eliminar usuario inexistente (debe devolver 404)
+DELETE http://localhost:8080/api/usuarios/999

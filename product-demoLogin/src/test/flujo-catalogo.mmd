@@ -1,0 +1,37 @@
+```mermaid
+graph TD
+    A[Usuario accede al home] --> B{¿Hay conexión a internet?}
+    B -->|Sí| C[Descargar imágenes de servicios externos<br/>https://images.unsplash.com]
+    B -->|No| D[Cargar imágenes del cache local<br/>Si el navegador las tiene en cache]
+    C --> E[Mostrar catálogo de propiedades]
+    D --> E
+    E --> F[Usuario hace clic en propiedad]
+    F --> G[Obtener detalles del inmueble<br/>desde backend/API]
+    G --> H[Mostrar detalles completos<br/>con imágenes]
+
+    subgraph Frontend - indexHome.html
+        B
+        C
+        D
+        E
+    end
+
+    subgraph Backend - API
+        G
+    end
+
+    subgraph Base de Datos
+        I[(Datos de Inmuebles<br/>sin imágenes binarias)]
+        I --> G
+    end
+
+    style A fill:#e1f5fe
+    style B fill:#fff3e0
+    style C fill:#c8e6c9
+    style D fill:#ffccbc
+    style E fill:#e1f5fe
+    style F fill:#e1f5fe
+    style G fill:#f3e5f5
+    style H fill:#e1f5fe
+    style I fill:#ffe0b2
+```

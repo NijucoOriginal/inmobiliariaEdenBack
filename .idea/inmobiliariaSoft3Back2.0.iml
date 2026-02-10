@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="JAVA_MODULE" version="4">
+  <component name="NewModuleRootManager" inherit-compiler-output="true">
+    <exclude-output />
+    <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/product-demoLogin/src/main/java" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/product-demoLogin/src/main/resources" type="java-resource" />
+      <sourceFolder url="file://$MODULE_DIR$/product-demoLogin/src/test" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/product-demoLogin/src/test/java" isTestSource="true" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="Maven: org.springframework.boot:spring-boot-autoconfigure:3.5.5" level="project" />
+  </component>
+</module>

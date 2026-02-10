@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CopilotDiffPersistence">
+    <option name="pendingDiffs">
+      <map>
+        <entry key="$PROJECT_DIR$/product-demoLogin/src/main/java/com/jsebastian/eden/EdenSys/services/InmuebleService.java">
+          <value>
+            <PendingDiffInfo>
+              <option name="filePath" value="$PROJECT_DIR$/product-demoLogin/src/main/java/com/jsebastian/eden/EdenSys/services/InmuebleService.java" />
+              <option name="originalContent" value="package com.jsebastian.eden.EdenSys.services;&#10;&#10;import com.jsebastian.eden.EdenSys.Dtos.InmuebleDto;&#10;import com.jsebastian.eden.EdenSys.Dtos.InmuebleResponse;&#10;import com.jsebastian.eden.EdenSys.exceptions.ValueConflictException;&#10;&#10;public interface InmuebleService {&#10;    InmuebleResponse crearInmueble(InmuebleDto inmuebleDto) throws ValueConflictException;&#10;}&#10;" />
+              <option name="updatedContent" value="package com.jsebastian.eden.EdenSys.services;&#10;&#10;import com.jsebastian.eden.EdenSys.Dtos.InmuebleDto;&#10;import com.jsebastian.eden.EdenSys.Dtos.InmuebleResponse;&#10;import com.jsebastian.eden.EdenSys.exceptions.ValueConflictException;&#10;&#10;public interface InmuebleService {&#10;    InmuebleResponse crearInmueble(InmuebleDto inmuebleDto) throws ValueConflictException;&#10;}&#10;" />
+            </PendingDiffInfo>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+</project>
