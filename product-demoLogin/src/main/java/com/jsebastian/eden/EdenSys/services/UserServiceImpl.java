@@ -12,17 +12,17 @@ import com.jsebastian.eden.EdenSys.exceptions.ValueConflictException;
 // API DE MENSAJES
 
 import com.jsebastian.eden.EdenSys.services.interfaces.UserService;
-import com.sendgrid.*;
-
-import com.sendgrid.helpers.mail.objects.Email;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -41,12 +41,10 @@ public class UserServiceImpl implements UserService {
     private UserMapper userMapper;
 
     @Autowired
-    private SendGrid sendGrid;
+    private JavaMailSender mailSender;
 
-    @Value("${sendgrid.from.email}")
+    @Value("${spring.mail.username}")
     private String fromEmail;
-    @Value("${sendgrid.from.name}")
-    private String fromName;
 
     private static final Logger logger = (Logger) LoggerFactory.getLogger(UserServiceImpl.class);
 
@@ -116,20 +114,20 @@ public class UserServiceImpl implements UserService {
         String subject = "Código de activación de tu cuenta";
         String content = "Hola, " + nuevoUsuario.getNombre() + ". Tu código de activación es: " + codigo;
 
-        Email from = new Email(fromEmail, fromName);
-        Email toEmail = new Email(to);
-        com.sendgrid.helpers.mail.Mail mail = new com.sendgrid.helpers.mail.Mail(from, subject, toEmail, new com.sendgrid.helpers.mail.objects.Content("text/plain", content));
+        enviarCorreo(to, subject, content);
+    }
 
-        Request request = new Request();
-        try {
-            request.setMethod(Method.POST);
-            request.setEndpoint("mail/send");
-            request.setBody(mail.build());
-            sendGrid.api(request);
-            logger.info("Correo de activación enviado a: {}", to);
-        } catch (Exception ex) {
-            logger.error("Error enviando correo de activación: {}", ex.getMessage());
-        }
+    public void enviarCorreo(String destino, String asunto, String mensaje) {
+        SimpleMailMessage mail = new SimpleMailMessage();
+        mail.setTo(destino);
+        mail.setSubject(asunto);
+        mail.setText(mensaje);
+        mail.setFrom(fromEmail);
+
+        System.out.println(mail.getFrom());
+
+
+        mailSender.send(mail);
     }
 
 
