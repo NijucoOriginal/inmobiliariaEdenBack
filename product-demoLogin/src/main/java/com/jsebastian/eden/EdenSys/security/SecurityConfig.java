@@ -66,6 +66,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authz -> authz
+                        .requestMatchers("/", "/health", "/actuator/**").permitAll()
                         .requestMatchers("/api/usuarios").permitAll() // crear usuario (registro)
                         .requestMatchers("/api/auth/activate/**").permitAll()
                         .requestMatchers("/api/auth/login").permitAll()
