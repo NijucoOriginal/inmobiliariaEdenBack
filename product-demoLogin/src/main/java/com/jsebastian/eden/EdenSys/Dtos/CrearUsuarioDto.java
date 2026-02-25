@@ -35,7 +35,7 @@ public record CrearUsuarioDto(
 
                                 @NotBlank(message = "La contraseña es obligatoria")
                                 @Pattern(
-                                    regexp = "^(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$",
+                                    regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^a-zA-Z0-9]).{8,}$",
                                     message = "La contraseña debe tener al menos una mayúscula, un número, un carácter especial y mínimo 8 caracteres")
                                 String contrasena,
                                 Rol rol

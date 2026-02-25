@@ -70,31 +70,37 @@ public class UserServiceImpl implements UserService {
      * @throws ValueConflictException si el email ya existe
      */
     @Override
-    public UsuarioResponse crearUsuario(CrearUsuarioDto crearUsuarioDto)  {
+    public UsuarioResponse crearUsuario(CrearUsuarioDto crearUsuarioDto) {
 
         String emailNormalizado = crearUsuarioDto.email().trim().toLowerCase();
-        /*if (existePorEmail(emailNormalizado))
-        {
-            throw new ValueConflictException("Ya existe un usuario con este email: " + emailNormalizado);
+
+        if (!esContrasenaSegura(crearUsuarioDto.contrasena())) {
+            throw new IllegalArgumentException(
+                    "La contraseña debe tener mínimo 8 caracteres, " +
+                            "al menos una mayúscula, una minúscula, un número y un símbolo."
+            );
         }
 
-         */
+        if (existePorCedula(crearUsuarioDto.documentoIdentidad())) {
+            throw new ValueConflictException(
+                    "Ya existe un usuario con esta cédula: " + crearUsuarioDto.documentoIdentidad()
+            );
+        }
 
-        if(usuarioRegistradoPreviamente(emailNormalizado))
-        {
-            throw new ValueConflictException("Ya existe un usuario con este email: " + emailNormalizado);
+        if (usuarioRegistradoPreviamente(emailNormalizado)) {
+            throw new ValueConflictException(
+                    "Ya existe un usuario con este email: " + emailNormalizado
+            );
         }
 
         try {
-            /*logica para la validación de cuentas por activación
-            Crear la entidad User a partir del DTO para asignar una creación temporal mientras se activa la cuenta*/
-
             var nuevoUsuario = userMapper.toEntity(crearUsuarioDto);
             nuevoUsuario.setContrasena(passwordEncoder.encode(crearUsuarioDto.contrasena()));
             nuevoUsuario.setRol(Rol.PENDIENTE);
 
             enviarCodigoEmailActivacion(nuevoUsuario);
             userRepository.save(nuevoUsuario);
+
             return userMapper.toUsuarioResponse(nuevoUsuario);
         } catch (Exception e) {
             logger.error("Error al crear usuario con email: {}", emailNormalizado, e);
@@ -107,8 +113,11 @@ public class UserServiceImpl implements UserService {
      * @param nuevoUsuario
      */
     private void enviarCodigoEmailActivacion(User nuevoUsuario) {
-        // Generar código alfanumérico de 6 caracteres
-        String codigo = java.util.UUID.randomUUID().toString().replaceAll("[^A-Za-z0-9]", "").substring(0, 6);
+        // Generar código numérico de 6 caracteres
+        java.security.SecureRandom random = new java.security.SecureRandom();
+        String codigo = String.format("%06d", random.nextInt(1_000_000));
+
+        // Guardar código en texto plano (está bien para tu caso)
         nuevoUsuario.setCodigoActivacion(codigo);
         String to = nuevoUsuario.getEmail();
         String subject = "Código de activación de tu cuenta";
@@ -389,6 +398,21 @@ public class UserServiceImpl implements UserService {
         {
             throw new IllegalArgumentException("Usuario no encontrado con el email proporcionado.");
         }
+    }
+
+    private boolean esContrasenaSegura(String contrasena) {
+        if (contrasena == null) return false;
+
+        // Regex:
+        // (?=.*[a-z])  -> al menos una minúscula
+        // (?=.*[A-Z])  -> al menos una mayúscula
+        // (?=.*\\d)    -> al menos un número
+        // (?=.*[^a-zA-Z0-9]) -> al menos un símbolo
+        // .{8,}        -> mínimo 8 caracteres
+
+        String patron = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^a-zA-Z0-9]).{8,}$";
+
+        return contrasena.matches(patron);
     }
 
     @Override
