@@ -28,6 +28,7 @@ public class AuthController {
     private String frontendLocalUrl;
 
     private final UserService userService;
+
     private final InmuebleService inmuebleService;
 
 

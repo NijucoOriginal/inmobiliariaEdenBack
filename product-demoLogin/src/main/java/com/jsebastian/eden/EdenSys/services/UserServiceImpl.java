@@ -21,10 +21,12 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+
 
 
 /**
@@ -81,30 +83,88 @@ public class UserServiceImpl implements UserService {
             );
         }
 
-        if (existePorCedula(crearUsuarioDto.documentoIdentidad())) {
-            throw new ValueConflictException(
-                    "Ya existe un usuario con esta cédula: " + crearUsuarioDto.documentoIdentidad()
-            );
-        }
-
-        if (usuarioRegistradoPreviamente(emailNormalizado)) {
-            throw new ValueConflictException(
-                    "Ya existe un usuario con este email: " + emailNormalizado
-            );
-        }
-
         try {
+
+            Optional<User> usuarioOpt = userRepository.findByEmail(emailNormalizado);
+
+            //SI EL USUARIO YA EXISTE
+
+            if (usuarioOpt.isPresent()) {
+
+                User usuario = usuarioOpt.get();
+
+                // DESVINCULADO  permitir registro nuevo
+                if (usuario.getRol() == Rol.DESVINCULADO) {
+
+                    if (existePorCedula(crearUsuarioDto.documentoIdentidad())) {
+                        throw new ValueConflictException(
+                                "Ya existe un usuario con esta cédula: "
+                                        + crearUsuarioDto.documentoIdentidad()
+                        );
+                    }
+
+                    userRepository.delete(usuario);
+                }
+
+                // PENDIENTE  actualizar datos + contraseña + reenviar código
+                else if (usuario.getRol() == Rol.PENDIENTE) {
+
+                    usuario.setNombre(crearUsuarioDto.nombre());
+                    usuario.setApellido(crearUsuarioDto.apellido());
+                    usuario.setTelefono(crearUsuarioDto.telefono());
+                    usuario.setDocumentoIdentidad(crearUsuarioDto.documentoIdentidad());
+
+                    usuario.setContrasena(
+                            passwordEncoder.encode(crearUsuarioDto.contrasena())
+                    );
+
+                    enviarCodigoEmailActivacion(usuario);
+                    userRepository.save(usuario);
+
+                    logger.info("Usuario pendiente actualizado y código reenviado: {}", emailNormalizado);
+
+                    return userMapper.toUsuarioResponse(usuario);
+                }
+
+                // YA ACTIVO
+                else {
+                    throw new ValueConflictException(
+                            "Ya existe un usuario activo con este email: " + emailNormalizado
+                    );
+                }
+            }
+
+            // USUARIO NUEVO
+
+            if (existePorCedula(crearUsuarioDto.documentoIdentidad())) {
+                throw new ValueConflictException(
+                        "Ya existe un usuario con esta cédula: "
+                                + crearUsuarioDto.documentoIdentidad()
+                );
+            }
+
             var nuevoUsuario = userMapper.toEntity(crearUsuarioDto);
-            nuevoUsuario.setContrasena(passwordEncoder.encode(crearUsuarioDto.contrasena()));
+
+            nuevoUsuario.setEmail(emailNormalizado);
+            nuevoUsuario.setContrasena(
+                    passwordEncoder.encode(crearUsuarioDto.contrasena())
+            );
             nuevoUsuario.setRol(Rol.PENDIENTE);
 
             enviarCodigoEmailActivacion(nuevoUsuario);
             userRepository.save(nuevoUsuario);
 
+            logger.info("Nuevo usuario creado con email: {}", emailNormalizado);
+
             return userMapper.toUsuarioResponse(nuevoUsuario);
+
         } catch (Exception e) {
+
             logger.error("Error al crear usuario con email: {}", emailNormalizado, e);
-            throw new RuntimeException("Error al crear el usuario: " + e.getMessage(), e);
+
+            throw new RuntimeException(
+                    "Error al crear el usuario: " + e.getMessage(), e
+            );
         }
     }
 
@@ -116,6 +176,7 @@ public class UserServiceImpl implements UserService {
         // Generar código numérico de 6 caracteres
         java.security.SecureRandom random = new java.security.SecureRandom();
         String codigo = String.format("%06d", random.nextInt(1_000_000));
+        nuevoUsuario.setFechaCreacionCodigo(LocalDateTime.now());
 
         // Guardar código en texto plano (está bien para tu caso)
         nuevoUsuario.setCodigoActivacion(codigo);
@@ -342,6 +403,16 @@ public class UserServiceImpl implements UserService {
 
         if (usuarioOptional.isPresent()) {
             User usuario = usuarioOptional.get();
+
+            if (usuario.getFechaCreacionCodigo().isBefore(LocalDateTime.now().minusMinutes(1))) { //10 minutos
+                logger.warn("Código expirado para usuario {}", usuario.getEmail());
+                usuario.setRol(Rol.PENDIENTE);
+                usuario.setCodigoActivacion(null);
+                usuario.setFechaCreacionCodigo(null);
+                userRepository.save(usuario);
+                return false;
+            }
+
 
             // Verificar si el usuario ya está activado
             if (usuario.getRol() != Rol.PENDIENTE) {
