@@ -7,7 +7,7 @@ import com.jsebastian.eden.EdenSys.domain.*;
 import com.jsebastian.eden.EdenSys.exceptions.ResourceNotFoundException;
 import com.jsebastian.eden.EdenSys.mappers.InmuebleMapper;
 import com.jsebastian.eden.EdenSys.repository.*;
-import com.jsebastian.eden.EdenSys.services.interfaces.ImagenService;
+import com.jsebastian.eden.EdenSys.services.interfaces.CloudinaryService;
 import com.jsebastian.eden.EdenSys.services.interfaces.InmuebleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,7 +42,7 @@ public class InmuebleServiceImpl implements InmuebleService {
     private PasswordEncoder passwordEncoder;
 
     @Autowired
-    private ImagenService imagenService;
+    private CloudinaryService cloudinaryService;
 
 
     @Override
@@ -60,32 +60,6 @@ public class InmuebleServiceImpl implements InmuebleService {
             nuevoInmueble.setDocumentosImportantes(new ArrayList<>());
             nuevoInmueble.setHistorial(new ArrayList<>());
 
-            /*User agente=new User();
-            agente.setEmail("diegonicolaspenarincon@gmail.com");
-            agente.setRol(Rol.AGENTE);
-            String contrasena="password123";
-            agente.setContrasena(passwordEncoder.encode(contrasena));
-            agente.setNombre("Diego Penar");
-            agente.setApellido("Rincon");
-            agente.setTelefono("1234567890");
-            agente.setCodigoActivacion(null);
-            agente.setDocumentoIdentidad("0326479618668");
-            userRepository.save(agente);
-
-
-
-            User asesor=new User();
-            asesor.setEmail("hola@gmail.com");
-            asesor.setRol(Rol.ASESOR_LEGAL);
-            asesor.setContrasena(passwordEncoder.encode(contrasena));
-            asesor.setNombre("Diego Rinconp");
-            asesor.setApellido("Penar");
-            asesor.setTelefono("123456789011");
-            asesor.setCodigoActivacion(null);
-            asesor.setDocumentoIdentidad("55554444777");
-            userRepository.save(asesor);
-
-             */
 
 
             User agenteMenorCarga = buscarAgenteConMenorCarga();
@@ -103,7 +77,7 @@ public class InmuebleServiceImpl implements InmuebleService {
                 {
                     try
                     {
-                        String ruta = imagenService.subirImagen(imagen);
+                        String ruta = cloudinaryService.subirImagen(imagen);
                         Imagen img = new Imagen();
                         img.setUrl(ruta);
                         img.setInmueble(nuevoInmueble);
@@ -125,7 +99,7 @@ public class InmuebleServiceImpl implements InmuebleService {
                  {
                      try
                      {
-                         String ruta = guardarArchivo(doc, "src/main/resources/documentosImportantes", nuevoInmueble.getCorreoContacto());
+                         String ruta = cloudinaryService.subirDocumento(doc);
                          DocumentoImportante documento = new DocumentoImportante();
                          documento.setRutaArchivo(ruta);
                          documento.setNombreDocumento(doc.getOriginalFilename());

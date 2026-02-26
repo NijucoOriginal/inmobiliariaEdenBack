@@ -33,4 +33,20 @@ public class CloudinaryConfig {
         return cloudinary.uploader().upload(tempFile, ObjectUtils.emptyMap());
     }
 
+    public Map uploadRaw(MultipartFile file) throws IOException {
+
+        File tempFile = File.createTempFile("upload", file.getOriginalFilename());
+        file.transferTo(tempFile);
+
+        Map result = cloudinary.uploader().upload(
+                tempFile,
+                ObjectUtils.asMap(
+                        "resource_type", "raw"
+                )
+        );
+
+        tempFile.delete(); // 🔥 buena práctica: eliminar archivo temporal
+
+        return result;
+    }
 }

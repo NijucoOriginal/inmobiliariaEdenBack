@@ -2,8 +2,9 @@ package com.jsebastian.eden.EdenSys.services.interfaces;
 
 import org.springframework.web.multipart.MultipartFile;
 
-public interface ImagenService {
+public interface CloudinaryService {
 
 
     String subirImagen(MultipartFile archivo);
+    String subirDocumento(MultipartFile archivo);
 }
