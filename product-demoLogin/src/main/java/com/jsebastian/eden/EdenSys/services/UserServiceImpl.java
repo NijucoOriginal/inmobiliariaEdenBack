@@ -1,6 +1,7 @@
 package com.jsebastian.eden.EdenSys.services;
 
 import ch.qos.logback.classic.Logger;
+import com.jsebastian.eden.EdenSys.Dtos.CambiarContrasenaDto;
 import com.jsebastian.eden.EdenSys.Dtos.UserResponse;
 import com.jsebastian.eden.EdenSys.Dtos.UsuarioResponse;
 import com.jsebastian.eden.EdenSys.domain.Rol;
@@ -21,10 +22,12 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+
 
 
 /**
@@ -70,35 +73,99 @@ public class UserServiceImpl implements UserService {
      * @throws ValueConflictException si el email ya existe
      */
     @Override
-    public UsuarioResponse crearUsuario(CrearUsuarioDto crearUsuarioDto)  {
+    public UsuarioResponse crearUsuario(CrearUsuarioDto crearUsuarioDto) {
 
         String emailNormalizado = crearUsuarioDto.email().trim().toLowerCase();
-        /*if (existePorEmail(emailNormalizado))
-        {
-            throw new ValueConflictException("Ya existe un usuario con este email: " + emailNormalizado);
-        }
 
-         */
-
-        if(usuarioRegistradoPreviamente(emailNormalizado))
-        {
-            throw new ValueConflictException("Ya existe un usuario con este email: " + emailNormalizado);
+        if (!esContrasenaSegura(crearUsuarioDto.contrasena())) {
+            throw new IllegalArgumentException(
+                    "La contraseña debe tener mínimo 8 caracteres, " +
+                            "al menos una mayúscula, una minúscula, un número y un símbolo."
+            );
         }
 
         try {
-            /*logica para la validación de cuentas por activación
-            Crear la entidad User a partir del DTO para asignar una creación temporal mientras se activa la cuenta*/
+
+            Optional<User> usuarioOpt = userRepository.findByEmail(emailNormalizado);
+
+            //SI EL USUARIO YA EXISTE
+
+            if (usuarioOpt.isPresent()) {
+
+                User usuario = usuarioOpt.get();
+
+                // DESVINCULADO  permitir registro nuevo
+                if (usuario.getRol() == Rol.DESVINCULADO) {
+
+                    if (existePorCedula(crearUsuarioDto.documentoIdentidad())) {
+                        throw new ValueConflictException(
+                                "Ya existe un usuario con esta cédula: "
+                                        + crearUsuarioDto.documentoIdentidad()
+                        );
+                    }
+
+                    userRepository.delete(usuario);
+                }
+
+                // PENDIENTE  actualizar datos + contraseña + reenviar código
+                else if (usuario.getRol() == Rol.PENDIENTE) {
+
+                    usuario.setNombre(crearUsuarioDto.nombre());
+                    usuario.setApellido(crearUsuarioDto.apellido());
+                    usuario.setTelefono(crearUsuarioDto.telefono());
+                    usuario.setDocumentoIdentidad(crearUsuarioDto.documentoIdentidad());
+
+                    usuario.setContrasena(
+                            passwordEncoder.encode(crearUsuarioDto.contrasena())
+                    );
+
+                    enviarCodigoEmailActivacion(usuario);
+                    userRepository.save(usuario);
+
+                    logger.info("Usuario pendiente actualizado y código reenviado: {}", emailNormalizado);
+
+                    return userMapper.toUsuarioResponse(usuario);
+                }
+
+                // YA ACTIVO
+                else {
+                    throw new ValueConflictException(
+                            "Ya existe un usuario activo con este email: " + emailNormalizado
+                    );
+                }
+            }
+
+            // USUARIO NUEVO
+
+            if (existePorCedula(crearUsuarioDto.documentoIdentidad())) {
+                throw new ValueConflictException(
+                        "Ya existe un usuario con esta cédula: "
+                                + crearUsuarioDto.documentoIdentidad()
+                );
+            }
 
             var nuevoUsuario = userMapper.toEntity(crearUsuarioDto);
-            nuevoUsuario.setContrasena(passwordEncoder.encode(crearUsuarioDto.contrasena()));
+
+            nuevoUsuario.setEmail(emailNormalizado);
+            nuevoUsuario.setContrasena(
+                    passwordEncoder.encode(crearUsuarioDto.contrasena())
+            );
             nuevoUsuario.setRol(Rol.PENDIENTE);
 
             enviarCodigoEmailActivacion(nuevoUsuario);
             userRepository.save(nuevoUsuario);
+
+            logger.info("Nuevo usuario creado con email: {}", emailNormalizado);
+
             return userMapper.toUsuarioResponse(nuevoUsuario);
+
         } catch (Exception e) {
+
             logger.error("Error al crear usuario con email: {}", emailNormalizado, e);
-            throw new RuntimeException("Error al crear el usuario: " + e.getMessage(), e);
+
+            throw new RuntimeException(
+                    "Error al crear el usuario: " + e.getMessage(), e
+            );
         }
     }
 
@@ -107,8 +174,12 @@ public class UserServiceImpl implements UserService {
      * @param nuevoUsuario
      */
     private void enviarCodigoEmailActivacion(User nuevoUsuario) {
-        // Generar código alfanumérico de 6 caracteres
-        String codigo = java.util.UUID.randomUUID().toString().replaceAll("[^A-Za-z0-9]", "").substring(0, 6);
+        // Generar código numérico de 6 caracteres
+        java.security.SecureRandom random = new java.security.SecureRandom();
+        String codigo = String.format("%06d", random.nextInt(1_000_000));
+        nuevoUsuario.setFechaCreacionCodigo(LocalDateTime.now());
+
+        // Guardar código en texto plano (está bien para tu caso)
         nuevoUsuario.setCodigoActivacion(codigo);
         String to = nuevoUsuario.getEmail();
         String subject = "Código de activación de tu cuenta";
@@ -334,6 +405,16 @@ public class UserServiceImpl implements UserService {
         if (usuarioOptional.isPresent()) {
             User usuario = usuarioOptional.get();
 
+            if (usuario.getFechaCreacionCodigo().isBefore(LocalDateTime.now().minusMinutes(10))) { //10 minutos
+                logger.warn("Código expirado para usuario {}", usuario.getEmail());
+                usuario.setRol(Rol.PENDIENTE);
+                usuario.setCodigoActivacion(null);
+                usuario.setFechaCreacionCodigo(null);
+                userRepository.save(usuario);
+                return false;
+            }
+
+
             // Verificar si el usuario ya está activado
             if (usuario.getRol() != Rol.PENDIENTE) {
                 logger.warn("El usuario con email {} ya está activado.", usuario.getEmail());
@@ -391,6 +472,113 @@ public class UserServiceImpl implements UserService {
         }
     }
 
+    private boolean esContrasenaSegura(String contrasena) {
+        if (contrasena == null) return false;
+
+        // Regex:
+        // (?=.*[a-z])  -> al menos una minúscula
+        // (?=.*[A-Z])  -> al menos una mayúscula
+        // (?=.*\\d)    -> al menos un número
+        // (?=.*[^a-zA-Z0-9]) -> al menos un símbolo
+        // .{8,}        -> mínimo 8 caracteres
+
+        String patron = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^a-zA-Z0-9]).{8,}$";
+
+        return contrasena.matches(patron);
+    }
+    public void enviarCodigoRecuperacionContrasena(String email) {
+
+        String emailNormalizado = email.trim().toLowerCase();
+
+        Optional<User> usuarioOpt = userRepository.findByEmail(emailNormalizado);
+
+        // No revelar si el usuario existe (práctica profesional)
+        if (usuarioOpt.isEmpty()) {
+            logger.warn("Solicitud de recuperación para email inexistente: {}", emailNormalizado);
+            return;
+        }
+
+        User usuario = usuarioOpt.get();
+
+        if (usuario.getRol() == Rol.DESVINCULADO) {
+            logger.warn("Intento de recuperación para usuario desvinculado: {}", emailNormalizado);
+            return;
+        }
+
+        // Generar código seguro
+        java.security.SecureRandom random = new java.security.SecureRandom();
+        String codigo = String.format("%06d", random.nextInt(1_000_000));
+
+        usuario.setCodigoActivacion(codigo);
+        usuario.setFechaCreacionCodigo(LocalDateTime.now());
+
+        userRepository.save(usuario);
+
+        String subject = "Recuperación de contraseña";
+        String mensaje = "Hola " + usuario.getNombre() +
+                ", tu código para restablecer la contraseña es: " + codigo +
+                "\nEste código expira en 10 minutos.";
+
+        enviarCorreo(usuario.getEmail(), subject, mensaje);
+
+        logger.info("Código de recuperación enviado a {}", emailNormalizado);
+    }
+
+    public boolean cambiarContrasenaConCodigo(CambiarContrasenaDto dto) {
+
+        String emailNormalizado = dto.email().trim().toLowerCase();
+
+        Optional<User> usuarioOpt = userRepository.findByEmail(emailNormalizado);
+
+        if (usuarioOpt.isEmpty()) {
+            logger.warn("Intento de cambio de contraseña con email inexistente: {}", emailNormalizado);
+            return false;
+        }
+
+        User usuario = usuarioOpt.get();
+
+        // Validar código
+        if (usuario.getCodigoActivacion() == null ||
+                !usuario.getCodigoActivacion().equals(dto.codigo())) {
+
+            logger.warn("Código incorrecto para {}", emailNormalizado);
+            return false;
+        }
+
+        // ⏱ Validar expiración
+        if (usuario.getFechaCreacionCodigo() == null ||
+                usuario.getFechaCreacionCodigo().isBefore(
+                        LocalDateTime.now().minusMinutes(10))) {
+
+            logger.warn("Código expirado para {}", emailNormalizado);
+
+            usuario.setCodigoActivacion(null);
+            usuario.setFechaCreacionCodigo(null);
+            userRepository.save(usuario);
+
+            return false;
+        }
+
+        // Validar seguridad de contraseña
+        if (!esContrasenaSegura(dto.nuevaContrasena())) {
+            throw new IllegalArgumentException(
+                    "La contraseña no cumple los requisitos de seguridad,debe contener minimo 8 caracteres,una minuscula,mayuscula y un signo"
+            );
+        }
+
+        // Encriptar nueva contraseña
+        usuario.setContrasena(passwordEncoder.encode(dto.nuevaContrasena()));
+
+        // Invalidar código
+        usuario.setCodigoActivacion(null);
+        usuario.setFechaCreacionCodigo(null);
+
+        userRepository.save(usuario);
+
+        logger.info("Contraseña actualizada correctamente para {}", emailNormalizado);
+
+        return true;
+    }
     @Override
     public String generarToken(User usuario) {
         return jwtService.generateToken(usuario);
