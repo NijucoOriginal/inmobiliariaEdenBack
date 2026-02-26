@@ -69,6 +69,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/usuarios").permitAll() // crear usuario (registro)
                         .requestMatchers("/api/auth/activate/**").permitAll()
                         .requestMatchers("/api/auth/login").permitAll()
+                        .requestMatchers("/api/auth/recuperar").permitAll()
                         .requestMatchers("/api/usuarios/**").hasAnyAuthority("CLIENTE", "AGENTE")
                         .requestMatchers("/api/inmuebles/**").permitAll()
                         .anyRequest().authenticated()

@@ -1,6 +1,7 @@
 package com.jsebastian.eden.EdenSys.services;
 
 import ch.qos.logback.classic.Logger;
+import com.jsebastian.eden.EdenSys.Dtos.CambiarContrasenaDto;
 import com.jsebastian.eden.EdenSys.Dtos.UserResponse;
 import com.jsebastian.eden.EdenSys.Dtos.UsuarioResponse;
 import com.jsebastian.eden.EdenSys.domain.Rol;
@@ -485,7 +486,99 @@ public class UserServiceImpl implements UserService {
 
         return contrasena.matches(patron);
     }
+    public void enviarCodigoRecuperacionContrasena(String email) {
 
+        String emailNormalizado = email.trim().toLowerCase();
+
+        Optional<User> usuarioOpt = userRepository.findByEmail(emailNormalizado);
+
+        // No revelar si el usuario existe (práctica profesional)
+        if (usuarioOpt.isEmpty()) {
+            logger.warn("Solicitud de recuperación para email inexistente: {}", emailNormalizado);
+            return;
+        }
+
+        User usuario = usuarioOpt.get();
+
+        if (usuario.getRol() == Rol.DESVINCULADO) {
+            logger.warn("Intento de recuperación para usuario desvinculado: {}", emailNormalizado);
+            return;
+        }
+
+        // Generar código seguro
+        java.security.SecureRandom random = new java.security.SecureRandom();
+        String codigo = String.format("%06d", random.nextInt(1_000_000));
+
+        usuario.setCodigoActivacion(codigo);
+        usuario.setFechaCreacionCodigo(LocalDateTime.now());
+
+        userRepository.save(usuario);
+
+        String subject = "Recuperación de contraseña";
+        String mensaje = "Hola " + usuario.getNombre() +
+                ", tu código para restablecer la contraseña es: " + codigo +
+                "\nEste código expira en 10 minutos.";
+
+        enviarCorreo(usuario.getEmail(), subject, mensaje);
+
+        logger.info("Código de recuperación enviado a {}", emailNormalizado);
+    }
+
+    public boolean cambiarContrasenaConCodigo(CambiarContrasenaDto dto) {
+
+        String emailNormalizado = dto.email().trim().toLowerCase();
+
+        Optional<User> usuarioOpt = userRepository.findByEmail(emailNormalizado);
+
+        if (usuarioOpt.isEmpty()) {
+            logger.warn("Intento de cambio de contraseña con email inexistente: {}", emailNormalizado);
+            return false;
+        }
+
+        User usuario = usuarioOpt.get();
+
+        // Validar código
+        if (usuario.getCodigoActivacion() == null ||
+                !usuario.getCodigoActivacion().equals(dto.codigo())) {
+
+            logger.warn("Código incorrecto para {}", emailNormalizado);
+            return false;
+        }
+
+        // ⏱ Validar expiración
+        if (usuario.getFechaCreacionCodigo() == null ||
+                usuario.getFechaCreacionCodigo().isBefore(
+                        LocalDateTime.now().minusMinutes(10))) {
+
+            logger.warn("Código expirado para {}", emailNormalizado);
+
+            usuario.setCodigoActivacion(null);
+            usuario.setFechaCreacionCodigo(null);
+            userRepository.save(usuario);
+
+            return false;
+        }
+
+        // Validar seguridad de contraseña
+        if (!esContrasenaSegura(dto.nuevaContrasena())) {
+            throw new IllegalArgumentException(
+                    "La contraseña no cumple los requisitos de seguridad."
+            );
+        }
+
+        // Encriptar nueva contraseña
+        usuario.setContrasena(passwordEncoder.encode(dto.nuevaContrasena()));
+
+        // Invalidar código
+        usuario.setCodigoActivacion(null);
+        usuario.setFechaCreacionCodigo(null);
+
+        userRepository.save(usuario);
+
+        logger.info("Contraseña actualizada correctamente para {}", emailNormalizado);
+
+        return true;
+    }
     @Override
     public String generarToken(User usuario) {
         return jwtService.generateToken(usuario);

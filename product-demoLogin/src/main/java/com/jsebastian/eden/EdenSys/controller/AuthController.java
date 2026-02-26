@@ -1,5 +1,6 @@
 package com.jsebastian.eden.EdenSys.controller;
 
+import com.jsebastian.eden.EdenSys.Dtos.CambiarContrasenaDto;
 import com.jsebastian.eden.EdenSys.Dtos.RegisterRequest;
 import com.jsebastian.eden.EdenSys.Dtos.LoginRequest;
 import com.jsebastian.eden.EdenSys.Dtos.AuthResponse;
@@ -63,4 +64,31 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new AuthResponse(e.getMessage()));
         }
     }
+    @PostMapping("/recuperar")
+    public ResponseEntity<String> solicitarRecuperacion(
+            @RequestParam String email
+    ) {
+        userService.enviarCodigoRecuperacionContrasena(email);
+
+        return ResponseEntity.ok(
+                "Si el correo está registrado, recibirás un código de recuperación."
+        );
+    }
+
+    @PostMapping("/recuperar/cambiar")
+    public ResponseEntity<String> cambiarContrasena(
+            @RequestBody CambiarContrasenaDto dto
+    ) {
+
+        boolean ok = userService.cambiarContrasenaConCodigo(dto);
+
+        if (!ok) {
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body("Código inválido o expirado.");
+        }
+
+        return ResponseEntity.ok("Contraseña actualizada correctamente.");
+    }
+
 }
