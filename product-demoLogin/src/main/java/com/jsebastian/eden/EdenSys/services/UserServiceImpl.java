@@ -405,7 +405,7 @@ public class UserServiceImpl implements UserService {
         if (usuarioOptional.isPresent()) {
             User usuario = usuarioOptional.get();
 
-            if (usuario.getFechaCreacionCodigo().isBefore(LocalDateTime.now().minusMinutes(1))) { //10 minutos
+            if (usuario.getFechaCreacionCodigo().isBefore(LocalDateTime.now().minusMinutes(10))) { //10 minutos
                 logger.warn("Código expirado para usuario {}", usuario.getEmail());
                 usuario.setRol(Rol.PENDIENTE);
                 usuario.setCodigoActivacion(null);
@@ -562,7 +562,7 @@ public class UserServiceImpl implements UserService {
         // Validar seguridad de contraseña
         if (!esContrasenaSegura(dto.nuevaContrasena())) {
             throw new IllegalArgumentException(
-                    "La contraseña no cumple los requisitos de seguridad."
+                    "La contraseña no cumple los requisitos de seguridad,debe contener minimo 8 caracteres,una minuscula,mayuscula y un signo"
             );
         }
 
