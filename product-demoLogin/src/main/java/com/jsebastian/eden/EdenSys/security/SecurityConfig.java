@@ -4,7 +4,6 @@ import com.jsebastian.eden.EdenSys.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -17,14 +16,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-import java.util.List;
-
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final UserRepository userRepository; // inyectar repo para crear UserDetailsService
+    private final UserRepository userRepository;
 
     @Bean
     public UserDetailsService userDetailsService() {
@@ -51,23 +48,15 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    // Nota: recibimos JwtAuthenticationFilter como parámetro del método bean (NO en el constructor)
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
         http
-                .cors(cors -> cors.configurationSource(request -> {
-                    var corsConfig = new org.springframework.web.cors.CorsConfiguration();
-                    corsConfig.setAllowedOrigins(List.of("http://localhost:4200"));
-                    corsConfig.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-                    corsConfig.setAllowedHeaders(List.of("Authorization", "Content-Type"));
-                    corsConfig.setAllowCredentials(true);
-                    return corsConfig;
-                }))
+                .cors(cors -> cors.configure(http)) // 👈 delega al WebConfig
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers("/", "/health", "/actuator/**").permitAll()
-                        .requestMatchers("/api/usuarios").permitAll() // crear usuario (registro)
+                        .requestMatchers("/api/usuarios").permitAll()
                         .requestMatchers("/api/auth/activate/**").permitAll()
                         .requestMatchers("/api/auth/login").permitAll()
                         .requestMatchers("/api/auth/recuperar").permitAll()
@@ -80,5 +69,4 @@ public class SecurityConfig {
 
         return http.build();
     }
-
 }

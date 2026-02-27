@@ -8,11 +8,6 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 public class WebConfig {
-    /**
-     * Clase que permite el manejo de cors globales para todo el proyecto general
-     * permite las variables de entorno frontend.url y frontend.local.url
-     * Para después , SecurityConfig gestiona el acceso a los endpoints
-     */
 
     @Value("${frontend.url}")
     private String frontendUrl;
@@ -31,6 +26,7 @@ public class WebConfig {
                 registry.addMapping("/api/**")
                         .allowedOrigins(frontendUrl, frontendLocalUrl, cloudfrontUrl)
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                        .allowedHeaders("Authorization", "Content-Type") // 👈 agregado
                         .allowCredentials(true);
             }
         };
