@@ -20,13 +20,16 @@ public class WebConfig {
     @Value("${frontend.local.url}")
     private String frontendLocalUrl;
 
+    @Value("${cloudfront.url:}")
+    private String cloudfrontUrl;
+
     @Bean
     public WebMvcConfigurer corsConfigurer() {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/api/**")
-                        .allowedOrigins(frontendUrl, frontendLocalUrl)
+                        .allowedOrigins(frontendUrl, frontendLocalUrl, cloudfrontUrl)
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowCredentials(true);
             }
