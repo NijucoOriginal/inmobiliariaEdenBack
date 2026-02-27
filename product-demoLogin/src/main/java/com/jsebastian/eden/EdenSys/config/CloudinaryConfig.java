@@ -35,17 +35,36 @@ public class CloudinaryConfig {
 
     public Map uploadRaw(MultipartFile file) throws IOException {
 
-        File tempFile = File.createTempFile("upload", file.getOriginalFilename());
+        String originalFilename = file.getOriginalFilename();
+
+        if (originalFilename == null || originalFilename.isEmpty()) {
+            throw new RuntimeException("El archivo no tiene nombre válido");
+        }
+
+        // Nombre sin extensión
+        String baseName = originalFilename.contains(".")
+                ? originalFilename.substring(0, originalFilename.lastIndexOf("."))
+                : originalFilename;
+
+        // ID único interno (pero conserva nombre)
+        String publicId = baseName + "_" + System.currentTimeMillis();
+
+        File tempFile = File.createTempFile("upload-", originalFilename);
         file.transferTo(tempFile);
 
         Map result = cloudinary.uploader().upload(
                 tempFile,
                 ObjectUtils.asMap(
-                        "resource_type", "raw"
+                        "resource_type", "raw",
+                        "public_id", publicId,          // 🔥 ID único
+                        "filename_override", originalFilename, // 🔥 Mantiene nombre original
+                        "use_filename", true,
+                        "unique_filename", false,
+                        "overwrite", false
                 )
         );
 
-        tempFile.delete(); // 🔥 buena práctica: eliminar archivo temporal
+        tempFile.delete();
 
         return result;
     }
