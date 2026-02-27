@@ -6,6 +6,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "users")
 @Data
@@ -19,4 +21,6 @@ public class User extends Persona {
     private Long id;
     
     private String codigoActivacion;
+
+    private LocalDateTime fechaCreacionCodigo;
 }

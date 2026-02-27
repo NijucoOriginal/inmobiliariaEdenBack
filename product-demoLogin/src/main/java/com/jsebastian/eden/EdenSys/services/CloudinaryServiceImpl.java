@@ -1,7 +1,7 @@
 package com.jsebastian.eden.EdenSys.services;
 
 import com.jsebastian.eden.EdenSys.config.CloudinaryConfig;
-import com.jsebastian.eden.EdenSys.services.interfaces.ImagenService;
+import com.jsebastian.eden.EdenSys.services.interfaces.CloudinaryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -12,7 +12,7 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
-public class ImagenServiceImpl implements ImagenService {
+public class CloudinaryServiceImpl implements CloudinaryService {
 
 
     @Autowired
@@ -30,4 +30,14 @@ public class ImagenServiceImpl implements ImagenService {
         }
     }
 
+    @Override
+    public String subirDocumento(MultipartFile archivo) {
+        try {
+            Map resultado = cloudinaryConfig.uploadRaw(archivo);
+            return resultado.get("secure_url").toString();
+        }
+        catch (IOException e) {
+            throw new RuntimeException("Error al subir documento a Cloudinary", e);
+        }
+    }
 }

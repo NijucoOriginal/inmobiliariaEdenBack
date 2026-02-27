@@ -1,5 +1,6 @@
 package com.jsebastian.eden.EdenSys.services.interfaces;
 
+import com.jsebastian.eden.EdenSys.Dtos.CambiarContrasenaDto;
 import com.jsebastian.eden.EdenSys.Dtos.UserResponse;
 import com.jsebastian.eden.EdenSys.Dtos.UsuarioResponse;
 import com.jsebastian.eden.EdenSys.domain.User;
@@ -110,6 +111,20 @@ public interface UserService {
      * @throws IllegalArgumentException si las credenciales son inválidas
      */
     String validarCredencialesYGenerarToken(String email, String contrasena);
+
+    /**
+     * Busca por email y valida si el codigo es correcto si es correcto cambia contrasena
+     * @param dto email,nueva contraseña y codigo de la cuenta del usuario
+     * @return boolean
+     */
+    boolean cambiarContrasenaConCodigo(CambiarContrasenaDto dto);
+
+    /**
+     * Envia codigo para recuperar contraseña
+     * @param email busca el correo y envia un codigo para la recuperacion de contraseña
+     * @return boolean
+     */
+    void enviarCodigoRecuperacionContrasena(String email);
 
     String generarToken(User usuario);
 }
