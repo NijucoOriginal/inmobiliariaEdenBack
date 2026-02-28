@@ -1,14 +1,12 @@
 package com.jsebastian.eden.EdenSys.controller;
 
-import com.jsebastian.eden.EdenSys.Dtos.CambiarContrasenaDto;
-import com.jsebastian.eden.EdenSys.Dtos.RegisterRequest;
-import com.jsebastian.eden.EdenSys.Dtos.LoginRequest;
-import com.jsebastian.eden.EdenSys.Dtos.AuthResponse;
+import com.jsebastian.eden.EdenSys.Dtos.*;
 import com.jsebastian.eden.EdenSys.domain.Inmueble;
 import com.jsebastian.eden.EdenSys.services.interfaces.InmuebleService;
 import com.jsebastian.eden.EdenSys.services.interfaces.UserService;
 import com.jsebastian.eden.EdenSys.services.JwtService;
 import com.jsebastian.eden.EdenSys.exceptions.ValueConflictException;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -16,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -29,6 +28,8 @@ public class AuthController {
     private String frontendLocalUrl;
 
     private final UserService userService;
+
+
 
     private final InmuebleService inmuebleService;
 
@@ -91,4 +92,12 @@ public class AuthController {
         return ResponseEntity.ok("Contraseña actualizada correctamente.");
     }
 
+    @PostMapping("/contacto")
+    public ResponseEntity<String> enviarContacto(
+            @Valid @RequestBody ContactoDto contacto) {
+
+        userService.procesarContacto(contacto);
+
+        return ResponseEntity.ok("Correo enviado correctamente");
+    }
 }

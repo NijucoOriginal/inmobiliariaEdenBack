@@ -1,13 +1,10 @@
 package com.jsebastian.eden.EdenSys.services;
 
 import ch.qos.logback.classic.Logger;
-import com.jsebastian.eden.EdenSys.Dtos.CambiarContrasenaDto;
-import com.jsebastian.eden.EdenSys.Dtos.UserResponse;
-import com.jsebastian.eden.EdenSys.Dtos.UsuarioResponse;
+import com.jsebastian.eden.EdenSys.Dtos.*;
 import com.jsebastian.eden.EdenSys.domain.Rol;
 import com.jsebastian.eden.EdenSys.domain.User;
 import com.jsebastian.eden.EdenSys.repository.UserRepository;
-import com.jsebastian.eden.EdenSys.Dtos.CrearUsuarioDto;
 import com.jsebastian.eden.EdenSys.mappers.UserMapper;
 import com.jsebastian.eden.EdenSys.exceptions.ValueConflictException;
 // API DE MENSAJES
@@ -199,6 +196,23 @@ public class UserServiceImpl implements UserService {
 
 
         mailSender.send(mail);
+    }
+
+
+    public void procesarContacto(ContactoDto contacto) {
+
+        String mensajeFinal =
+                "Nuevo mensaje de contacto\n\n" +
+                        "Nombre: " + contacto.nombre() + "\n" +
+                        "Teléfono: " + contacto.telefono() + "\n" +
+                        "Correo: " + contacto.correo() + "\n\n" +
+                        "Mensaje:\n" + contacto.mensaje();
+
+       enviarCorreo(
+                "inmobiliariaedenco@gmail.com",
+                "Nuevo contacto - " + contacto.asunto(),
+                mensajeFinal
+        );
     }
 
 

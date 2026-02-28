@@ -1,11 +1,9 @@
 package com.jsebastian.eden.EdenSys.services.interfaces;
 
-import com.jsebastian.eden.EdenSys.Dtos.CambiarContrasenaDto;
-import com.jsebastian.eden.EdenSys.Dtos.UserResponse;
-import com.jsebastian.eden.EdenSys.Dtos.UsuarioResponse;
+import com.jsebastian.eden.EdenSys.Dtos.*;
 import com.jsebastian.eden.EdenSys.domain.User;
-import com.jsebastian.eden.EdenSys.Dtos.CrearUsuarioDto;
 import com.jsebastian.eden.EdenSys.exceptions.ValueConflictException;
+import jakarta.validation.Valid;
 
 import java.util.List;
 import java.util.Optional;
@@ -127,4 +125,8 @@ public interface UserService {
     void enviarCodigoRecuperacionContrasena(String email);
 
     String generarToken(User usuario);
+
+    void enviarCorreo(String mail, String asunto, String mensaje);
+
+    void procesarContacto(@Valid ContactoDto contacto);
 }
