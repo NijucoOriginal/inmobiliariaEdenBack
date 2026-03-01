@@ -141,23 +141,6 @@ public class InmuebleServiceImpl implements InmuebleService {
         }
     }
 
-    private String guardarArchivo(MultipartFile archivo, String carpetaDestino,String correoUsuario) throws IOException {
-        // Crear carpeta si no existe
-        Path carpeta = Paths.get(carpetaDestino);
-        if (!Files.exists(carpeta)) {
-            Files.createDirectories(carpeta);
-        }
-
-        // Generar nombre único
-        String nombreArchivo = UUID.randomUUID() + "_" + archivo.getOriginalFilename()+"_"+correoUsuario;
-        Path rutaArchivo = carpeta.resolve(nombreArchivo);
-
-        // Guardar físicamente
-        Files.copy(archivo.getInputStream(), rutaArchivo, StandardCopyOption.REPLACE_EXISTING);
-
-        return rutaArchivo.toString(); // O devolver una ruta relativa si prefieres
-    }
-
 
     @Override
     public InmuebleResponse crearInmueble(InmuebleDto inmuebleDto) {
@@ -380,6 +363,7 @@ public class InmuebleServiceImpl implements InmuebleService {
 
             List<Inmueble> inmuebles = inmuebleRepository.findInmueblesByAgenteAsociado(agenteAsociado);
 
+
             if (inmuebles.isEmpty())
             {
                 throw new ResourceNotFoundException("No se encontraron inmuebles para el usuario con id: " + agenteAsociado.getId());
@@ -401,6 +385,8 @@ public class InmuebleServiceImpl implements InmuebleService {
             User agenteAsociado=usuario.orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
             Optional<Inmueble> inmuebleAsociado=inmuebleRepository.findInmuebleByAgenteAsociado(agenteAsociado);
+
+            System.out.println (inmuebleAsociado.get().getImagenes().getFirst().getUrl());
 
             Inmueble inmuebleMandar=inmuebleAsociado.orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
             return inmuebleMapper.toResponse(inmuebleMandar);
@@ -446,6 +432,8 @@ public class InmuebleServiceImpl implements InmuebleService {
             estados.add(EstadoTransaccion.VENDIDO);
             estados.add(EstadoTransaccion.PENDIENTE);
             var lista = inmuebleRepository.findByEstadoTransaNotIn(estados);
+
+          //  System.out.println ("Enviando todo: "+lista.get(0).get);
             return lista.stream().map(inmuebleMapper::toResponse).toList();
         }
         catch (Exception e)

@@ -41,24 +41,26 @@ public class CloudinaryConfig {
             throw new RuntimeException("El archivo no tiene nombre válido");
         }
 
-        // Nombre sin extensión
         String baseName = originalFilename.contains(".")
                 ? originalFilename.substring(0, originalFilename.lastIndexOf("."))
                 : originalFilename;
 
-        // ID único interno (pero conserva nombre)
-        String publicId = baseName + "_" + System.currentTimeMillis();
+        // 🔥 LIMPIAR NOMBRE
+        String safeBaseName = baseName.replaceAll("[^a-zA-Z0-9-_]", "_");
+        String publicId = safeBaseName + "_" + System.currentTimeMillis();
 
-        File tempFile = File.createTempFile("upload-", originalFilename);
+        File tempFile = File.createTempFile("upload-", ".tmp");
         file.transferTo(tempFile);
 
         Map result = cloudinary.uploader().upload(
                 tempFile,
                 ObjectUtils.asMap(
                         "resource_type", "raw",
-                        "public_id", publicId,          // 🔥 ID único
-                        "filename_override", originalFilename, // 🔥 Mantiene nombre original
-                        "use_filename", true,
+                        "type", "upload",
+                        "access_mode", "public",
+                        "public_id", publicId,
+                        "filename_override", originalFilename,
+                        "use_filename", false,
                         "unique_filename", false,
                         "overwrite", false
                 )
