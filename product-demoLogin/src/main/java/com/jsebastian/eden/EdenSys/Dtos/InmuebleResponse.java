@@ -9,8 +9,8 @@ public record InmuebleResponse(
         double longitud,
         double latitud,
         TipoNegocio tipoNegocio,
-        long agenteAsociado,
-        long asesorLegal, // solo el ID del asesor legal
+        AgenteResponse agenteAsociado,
+        long asesorLegal,
         TipoInmueble tipo,
         double medidas,
         int habitaciones,
@@ -25,5 +25,7 @@ public record InmuebleResponse(
         String correoContacto,
         List<String> imagenes,
         long propietario,
-        long id// ✅ solo las URLs
+        long id,
+        List<String> documentosImportantes
+
 ) {}
