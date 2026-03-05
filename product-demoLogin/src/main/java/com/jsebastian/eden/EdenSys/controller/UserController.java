@@ -64,18 +64,6 @@ public class UserController {
 
 
     /**
-     * Obtiene todos los usuarios
-     * @return ResponseEntity con la lista de usuarios
-     */
-    /*@GetMapping
-    public ResponseEntity<List<User>> obtenerTodosLosUsuarios() {
-        List<User> usuarios = userService.obtenerTodosLosUsuarios();
-        return new ResponseEntity<>(usuarios, HttpStatus.OK);
-    }
-
-     */
-
-    /**
      * Obtiene un usuario por su ID
      * @param id el ID del usuario
      * @return ResponseEntity con el usuario encontrado
