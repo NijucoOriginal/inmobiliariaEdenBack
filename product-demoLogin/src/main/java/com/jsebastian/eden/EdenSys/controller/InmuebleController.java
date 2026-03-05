@@ -118,15 +118,6 @@ public class InmuebleController {
         }
     }
 
-    @PatchMapping("/{id}")
-    public ResponseEntity<?> patchInmueble(@PathVariable Long id, @RequestBody InmueblePatchDto patchDto) {
-        try {
-            InmuebleResponse response = inmuebleService.patchInmueble(id, patchDto);
-            return ResponseEntity.ok(response);
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Error: " + e.getMessage());
-        }
-    }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> eliminarInmueble(@PathVariable Long id) {

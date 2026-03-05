@@ -12,7 +12,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 public interface InmuebleService {
-    InmuebleResponse crearInmueble(InmuebleDto inmuebleDto) throws ValueConflictException;
 
     User buscarAgenteConMenorCarga();
 
@@ -25,7 +24,6 @@ public interface InmuebleService {
 
     InmuebleResponse actualizarEstadoTransaInmueble(String estadoTransa, Long id);
 
-    InmuebleResponse patchInmueble(Long id, InmueblePatchDto patchDto);
     InmuebleResponse obtenerInmueble(Long id);
 
     List<InmuebleResponse> buscarInmueblesPorUsuario(String propietarioEmail);
