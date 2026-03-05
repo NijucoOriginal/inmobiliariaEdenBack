@@ -242,17 +242,6 @@ public class InmuebleServiceImpl implements InmuebleService {
 
 
     @Override
-    public InmuebleResponse obtenerInmueble(Long id) {
-        try {
-            var inmueble = inmuebleRepository.findById(id)
-                    .orElseThrow(() -> new RuntimeException("Inmueble no encontrado con id: " + id));
-            return inmuebleMapper.toResponse(inmueble);
-        } catch (Exception e) {
-            throw new RuntimeException("Error al obtener el inmueble: " + e.getMessage(), e);
-        }
-    }
-
-    @Override
     public List<InmuebleResponse> buscarInmueblesPorUsuario(String propietarioEmail) {
         try
         {
@@ -312,29 +301,6 @@ public class InmuebleServiceImpl implements InmuebleService {
 
             Inmueble inmuebleMandar=inmuebleAsociado.orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
             return inmuebleMapper.toResponse(inmuebleMandar);
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException("Error al buscar inmueble por agente: " + e.getMessage(), e);
-        }
-
-    }
-
-    @Override
-    public Inmueble buscarInmueblePorAgenteSinResponse(String emailAgente) {
-        try
-        {
-
-            Optional<User> usuario=userRepository.findByEmail(emailAgente);
-
-            User agenteAsociado=usuario.orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-
-
-            Optional<Inmueble> inmuebleAsociado=inmuebleRepository.findInmuebleByAgenteAsociado(agenteAsociado);
-
-            System.out.println("Llega hasta aqui 2");
-
-            return inmuebleAsociado.orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
         }
         catch (Exception e)
         {

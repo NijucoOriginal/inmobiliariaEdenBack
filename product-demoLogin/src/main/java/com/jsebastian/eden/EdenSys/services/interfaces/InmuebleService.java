@@ -24,15 +24,12 @@ public interface InmuebleService {
 
     InmuebleResponse actualizarEstadoTransaInmueble(String estadoTransa, Long id);
 
-    InmuebleResponse obtenerInmueble(Long id);
 
     List<InmuebleResponse> buscarInmueblesPorUsuario(String propietarioEmail);
 
     List<InmuebleResponse> buscarInmueblesPorAgente(String emailAgente);
 
     InmuebleResponse buscarInmueblePorAgente(String emailAgente);
-
-    Inmueble buscarInmueblePorAgenteSinResponse(String emailAgente);
 
     List<InmuebleResponse> obtenerListaDeInmuebles();
 
