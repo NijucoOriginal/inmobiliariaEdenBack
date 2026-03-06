@@ -121,9 +121,6 @@ public class InmuebleController {
     public ResponseEntity<?> transferirInmueble(@PathVariable Long id,@RequestBody InmuebleDto inmueble) {
         User usuarioNormalucho = userService.buscarPorId(id)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado con id: " + id));
-
-
-
         return ResponseEntity.ok(usuarioNormalucho);
     }
 }

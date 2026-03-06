@@ -1,6 +1,7 @@
 package com.jsebastian.eden.EdenSys.services;
 
 import com.jsebastian.eden.EdenSys.config.CloudinaryConfig;
+import com.jsebastian.eden.EdenSys.domain.Inmueble;
 import com.jsebastian.eden.EdenSys.services.interfaces.CloudinaryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,4 +41,24 @@ public class CloudinaryServiceImpl implements CloudinaryService {
             throw new RuntimeException("Error al subir documento a Cloudinary", e);
         }
     }
+
+    @Override
+    public void eliminarArchivo(Inmueble inmueble, String resourceType, int cantidadArchivos) {
+        String url=null;
+        for(int i = 0; i < cantidadArchivos; i++)
+        {
+            try
+            {
+                url=inmueble.getImagenes().get(i).getUrl();
+                String publicId = url.substring(url.lastIndexOf("/") + 1, url.lastIndexOf("."));
+                cloudinaryConfig.deleteFile(publicId, resourceType);
+            }
+            catch (Exception e)
+            {
+                System.out.println("No se pudo eliminar archivo de Cloudinary: " + url);
+            }
+        }
+    }
+
+
 }
