@@ -5,6 +5,7 @@ import com.jsebastian.eden.EdenSys.Dtos.UserResponse;
 import com.jsebastian.eden.EdenSys.Dtos.UsuarioResponse;
 import com.jsebastian.eden.EdenSys.domain.User;
 import com.jsebastian.eden.EdenSys.repository.UserRepository;
+import com.jsebastian.eden.EdenSys.services.interfaces.CaptchaService;
 import com.jsebastian.eden.EdenSys.services.interfaces.UserService;
 import com.jsebastian.eden.EdenSys.Dtos.CrearUsuarioDto;
 import com.jsebastian.eden.EdenSys.exceptions.ValueConflictException;
@@ -34,6 +35,7 @@ public class UserController {
 
     private final UserService userService;
 
+    private final CaptchaService captchaService;
     /**
 * Crea un nuevo usuario usando DTO con validaciones Jakarta
      * @param crearUsuarioDto el DTO con los datos del usuario a crear
@@ -42,6 +44,17 @@ public class UserController {
     @PostMapping
     public ResponseEntity<?> crearUsuario(@Valid @RequestBody CrearUsuarioDto crearUsuarioDto){
         try {
+
+            // VERIFICACIÓN DEL CAPTCHA
+            boolean isCaptchaValid = captchaService.verificar(crearUsuarioDto.recaptchaToken());
+
+            if (!isCaptchaValid) {
+                Map<String, String> errorResponse = new HashMap<>();
+                errorResponse.put("error", "Seguridad");
+                errorResponse.put("message", "La verificación de reCAPTCHA ha fallado o ha expirado.");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+            }
+
             UsuarioResponse response = userService.crearUsuario(crearUsuarioDto);
             return ResponseEntity.ok(response);
         } catch (ValueConflictException e) {
