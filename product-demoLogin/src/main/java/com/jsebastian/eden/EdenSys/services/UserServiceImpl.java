@@ -10,6 +10,7 @@ import com.jsebastian.eden.EdenSys.mappers.UserMapper;
 import com.jsebastian.eden.EdenSys.exceptions.ValueConflictException;
 // API DE MENSAJES
 
+import com.jsebastian.eden.EdenSys.services.interfaces.CaptchaService;
 import com.jsebastian.eden.EdenSys.services.interfaces.LogsService;
 import com.jsebastian.eden.EdenSys.services.interfaces.UserService;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +49,9 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private LogsService logsService;
+
+    @Autowired
+    private CaptchaService captchaService;
 
     private static final Logger logger = (Logger) LoggerFactory.getLogger(UserServiceImpl.class);
 
@@ -446,7 +450,7 @@ public class UserServiceImpl implements UserService {
      * @throws IllegalArgumentException si las credenciales son inválidas
      */
     @Override
-    public String validarCredencialesYGenerarToken(String email, String contrasena) {
+    public String validarCredencialesYGenerarToken(String email, String contrasena,String captchaToken) {
         Optional<User> usuarioOptional = userRepository.findByEmail(email);
 
         System.out.println("Validando credenciales para el email: " + email);

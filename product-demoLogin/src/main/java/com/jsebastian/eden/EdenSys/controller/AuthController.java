@@ -60,8 +60,16 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
+        // 1. VERIFICACIÓN DEL CAPTCHA (Igual que en el registro)
+        boolean isCaptchaValid = captchaService.verificar(request.recaptchaToken());
+
+        if (!isCaptchaValid) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new AuthResponse("La verificación de reCAPTCHA ha fallado o ha expirado."));
+        }
+
         try {
-            String token = userService.validarCredencialesYGenerarToken(request.email(), request.contrasena());
+            String token = userService.validarCredencialesYGenerarToken(request.email(), request.contrasena(), request.recaptchaToken());
             return ResponseEntity.ok(new AuthResponse(token));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new AuthResponse(e.getMessage()));

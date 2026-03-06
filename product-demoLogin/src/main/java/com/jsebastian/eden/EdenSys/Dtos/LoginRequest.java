@@ -9,6 +9,7 @@ public record LoginRequest(
         String email,
 
         @NotBlank(message = "La contraseña es obligatoria")
-        String contrasena
+        String contrasena,
+        String recaptchaToken
 ) {
 }
