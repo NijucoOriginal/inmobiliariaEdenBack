@@ -119,10 +119,10 @@ public interface UserService {
 
     /**
      * Envia codigo para recuperar contraseña
-     * @param email busca el correo y envia un codigo para la recuperacion de contraseña
+     * @param solicitarRecuperacionDto busca el correo y envia un codigo para la recuperacion de contraseña
      * @return boolean
      */
-    void enviarCodigoRecuperacionContrasena(String email);
+    void enviarCodigoRecuperacionContrasena(SolicitarRecuperacionDto solicitarRecuperacionDto);
 
     String generarToken(User usuario);
 

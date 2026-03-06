@@ -220,6 +220,8 @@ public class UserServiceImpl implements UserService {
                 "Nuevo contacto - " + contacto.asunto(),
                 mensajeFinal
         );
+
+        enviarCorreo(contacto.correo(),"Recibimos su correo","Pronto te responderemos tus inquietudes");
     }
 
 
@@ -482,9 +484,9 @@ public class UserServiceImpl implements UserService {
 
         return contrasena.matches(patron);
     }
-    public void enviarCodigoRecuperacionContrasena(String email) {
+    public void enviarCodigoRecuperacionContrasena(SolicitarRecuperacionDto solicitarRecuperacionDto) {
 
-        String emailNormalizado = email.trim().toLowerCase();
+        String emailNormalizado =solicitarRecuperacionDto.email().trim().toLowerCase();
 
         Optional<User> usuarioOpt = userRepository.findByEmail(emailNormalizado);
 
