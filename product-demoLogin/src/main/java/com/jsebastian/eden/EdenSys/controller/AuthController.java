@@ -112,6 +112,14 @@ public class AuthController {
     public ResponseEntity<String> enviarContacto(
             @Valid @RequestBody ContactoDto contacto) {
 
+        // 1. VALIDACIÓN DEL CAPTCHA
+        boolean esHumano = captchaService.verificar(contacto.recaptchaToken());
+
+        if (!esHumano) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Fallo en la verificación de seguridad (reCAPTCHA).");
+        }
+
         userService.procesarContacto(contacto);
 
         return ResponseEntity.ok("Correo enviado correctamente");
