@@ -2,6 +2,7 @@ package com.jsebastian.eden.EdenSys.controller;
 
 import com.jsebastian.eden.EdenSys.Dtos.*;
 import com.jsebastian.eden.EdenSys.domain.Inmueble;
+import com.jsebastian.eden.EdenSys.services.interfaces.CaptchaService;
 import com.jsebastian.eden.EdenSys.services.interfaces.InmuebleService;
 import com.jsebastian.eden.EdenSys.services.interfaces.UserService;
 import com.jsebastian.eden.EdenSys.services.JwtService;
@@ -29,6 +30,7 @@ public class AuthController {
 
     private final UserService userService;
 
+    private final CaptchaService captchaService;
 
 
     private final InmuebleService inmuebleService;
@@ -58,8 +60,16 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
+        // 1. VERIFICACIÓN DEL CAPTCHA (Igual que en el registro)
+        boolean isCaptchaValid = captchaService.verificar(request.recaptchaToken());
+
+        if (!isCaptchaValid) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new AuthResponse("La verificación de reCAPTCHA ha fallado o ha expirado."));
+        }
+
         try {
-            String token = userService.validarCredencialesYGenerarToken(request.email(), request.contrasena());
+            String token = userService.validarCredencialesYGenerarToken(request.email(), request.contrasena(), request.recaptchaToken());
             return ResponseEntity.ok(new AuthResponse(token));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new AuthResponse(e.getMessage()));
@@ -67,13 +77,19 @@ public class AuthController {
     }
     @PostMapping("/recuperar")
     public ResponseEntity<String> solicitarRecuperacion(
-            @RequestParam String email
+            @Valid @RequestBody SolicitarRecuperacionDto solicitarRecuperacionDto // ✅ Body, NO Param
     ) {
-        userService.enviarCodigoRecuperacionContrasena(email);
+        // 1. Validar Captcha
+        boolean esHumano = captchaService.verificar(solicitarRecuperacionDto.recaptchaToken());
 
-        return ResponseEntity.ok(
-                "Si el correo está registrado, recibirás un código de recuperación."
-        );
+        if (!esHumano) {
+            return ResponseEntity.badRequest().body("Fallo en la verificación de seguridad.");
+        }
+
+        // 2. Llamar a tu Service (que ahora recibe el DTO completo)
+        userService.enviarCodigoRecuperacionContrasena(solicitarRecuperacionDto);
+
+        return ResponseEntity.ok("Si el correo está registrado, recibirás un código.");
     }
 
     @PostMapping("/recuperar/cambiar")
@@ -95,6 +111,14 @@ public class AuthController {
     @PostMapping("/contacto")
     public ResponseEntity<String> enviarContacto(
             @Valid @RequestBody ContactoDto contacto) {
+
+        // 1. VALIDACIÓN DEL CAPTCHA
+        boolean esHumano = captchaService.verificar(contacto.recaptchaToken());
+
+        if (!esHumano) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Fallo en la verificación de seguridad (reCAPTCHA).");
+        }
 
         userService.procesarContacto(contacto);
 

@@ -108,7 +108,7 @@ public interface UserService {
      * @return el token JWT generado
      * @throws IllegalArgumentException si las credenciales son inválidas
      */
-    String validarCredencialesYGenerarToken(String email, String contrasena);
+    String validarCredencialesYGenerarToken(String email, String contrasena,String captcha);
 
     /**
      * Busca por email y valida si el codigo es correcto si es correcto cambia contrasena
@@ -119,10 +119,10 @@ public interface UserService {
 
     /**
      * Envia codigo para recuperar contraseña
-     * @param email busca el correo y envia un codigo para la recuperacion de contraseña
+     * @param solicitarRecuperacionDto busca el correo y envia un codigo para la recuperacion de contraseña
      * @return boolean
      */
-    void enviarCodigoRecuperacionContrasena(String email);
+    void enviarCodigoRecuperacionContrasena(SolicitarRecuperacionDto solicitarRecuperacionDto);
 
     String generarToken(User usuario);
 

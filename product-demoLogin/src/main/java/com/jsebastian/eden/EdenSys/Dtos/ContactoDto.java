@@ -26,6 +26,7 @@ public record ContactoDto(
 
         @NotBlank(message = "El mensaje es obligatorio")
         @Size(max = 500, message = "El mensaje no puede superar 500 caracteres")
-        String mensaje
+        String mensaje,
+        @NotBlank String recaptchaToken
 
 ) {}
