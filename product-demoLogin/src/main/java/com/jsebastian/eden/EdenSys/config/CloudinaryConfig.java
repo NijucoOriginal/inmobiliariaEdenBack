@@ -70,4 +70,15 @@ public class CloudinaryConfig {
 
         return result;
     }
+
+    public void deleteFile(String publicId, String resourceType) throws IOException {
+
+        cloudinary.uploader().destroy(
+                publicId,
+                ObjectUtils.asMap(
+                        "resource_type", resourceType
+                )
+        );
+
+    }
 }

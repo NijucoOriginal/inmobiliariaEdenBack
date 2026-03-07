@@ -191,13 +191,14 @@ public class InmuebleServiceImpl implements InmuebleService {
         return usuarioMenorCarga;
     }
 
-
-
     @Override
     public void eliminarInmueble(Long id) {
         try {
             var inmueble = inmuebleRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("Inmueble no encontrado con id: " + id));
+            cloudinaryService.eliminarArchivo(inmueble, "image", inmueble.getImagenes().size());
+            cloudinaryService.eliminarArchivo(inmueble, "raw", inmueble.getDocumentosImportantes().size());
+
             inmuebleRepository.deleteById(id);
             logsService.registrarLog("Inmueble eliminado correctamente",inmueble.getPropietario().getId());
         } catch (Exception e) {
