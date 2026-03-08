@@ -38,6 +38,9 @@ public class InmuebleServiceImpl implements InmuebleService {
     @Autowired
     private LogsServiceImpl logsService;
 
+    @Autowired
+    private UserServiceImpl userService;
+
 
     @Override
     public InmuebleResponse crearInmueble(InmuebleDto inmuebleDto,
@@ -125,6 +128,7 @@ public class InmuebleServiceImpl implements InmuebleService {
 
 
             nuevoInmueble = inmuebleRepository.save(nuevoInmueble);
+            userService.enviarCorreo(nuevoInmueble.getPropietario().getEmail(),"Inmueble creado correctamente", "Su inmueble ha sido creado exitosamente con el id: "+nuevoInmueble.getId());
             logsService.registrarLog("Inmueble creado correctamente, a continuación el id del inmueble recien creado "+nuevoInmueble.getId(),nuevoInmueble.getPropietario().getId());
 
             return inmuebleMapper.toResponse(nuevoInmueble);
@@ -232,7 +236,10 @@ public class InmuebleServiceImpl implements InmuebleService {
 
             inmuebleRepository.save(inmuebleMandar);
 
+            userService.enviarCorreo(inmuebleMandar.getPropietario().getEmail(),"Estado del inmueble actualizado", "Su inmueble acaba de ser actualizado a: "+inmuebleMandar.getEstadoTransa());
+
             logsService.registrarLog("El estado del inmueble"+inmuebleMandar.getId() +"ha sido moficiado por: "+estadoTransa,inmuebleMandar.getAgenteAsociado().getId());
+
             return inmuebleMapper.toResponse(inmuebleMandar);
         }
         catch (Exception e)
