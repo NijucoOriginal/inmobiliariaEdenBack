@@ -418,7 +418,6 @@ public class UserServiceImpl implements UserService {
                 usuario.setCodigoActivacion(null);
                 usuario.setFechaCreacionCodigo(null);
                 userRepository.save(usuario);
-                logsService.registrarLog("El codigo de activacion del usuario ha expirado",usuario.getId());
                 return false;
             }
 
@@ -437,9 +436,7 @@ public class UserServiceImpl implements UserService {
 
             logger.info("Usuario con email {} activado exitosamente.", usuario.getEmail());
             return true;
-        }
-        else
-        {
+        } else {
             logger.warn("Código de activación inválido: {}", codigo);
             return false;
         }
@@ -468,10 +465,7 @@ public class UserServiceImpl implements UserService {
                     System.out.println("Contraseña válida, token generado.");
                     logsService.registrarLog("Inicio de sesion exitoso ",usuario.getId());
                     return generarToken(usuario);
-                }
-                else
-                {
-                    logsService.registrarLog("Inicio de sesion no exitoso ", 0L);
+                } else {
                     throw new IllegalArgumentException("Contraseña incorrecta.");
                 }
             }
