@@ -1,7 +1,6 @@
 package com.jsebastian.eden.EdenSys.services;
 
 import com.jsebastian.eden.EdenSys.Dtos.InmuebleDto;
-import com.jsebastian.eden.EdenSys.Dtos.InmueblePatchDto;
 import com.jsebastian.eden.EdenSys.Dtos.InmuebleResponse;
 import com.jsebastian.eden.EdenSys.domain.*;
 import com.jsebastian.eden.EdenSys.exceptions.ResourceNotFoundException;
@@ -11,20 +10,14 @@ import com.jsebastian.eden.EdenSys.services.interfaces.CloudinaryService;
 import com.jsebastian.eden.EdenSys.services.interfaces.InmuebleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
+
 
 @Service
 @RequiredArgsConstructor
@@ -38,11 +31,15 @@ public class InmuebleServiceImpl implements InmuebleService {
     @Autowired
     private  UserRepository userRepository;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
 
     @Autowired
     private CloudinaryService cloudinaryService;
+
+    @Autowired
+    private LogsServiceImpl logsService;
+
+    @Autowired
+    private UserServiceImpl userService;
 
 
     @Override
@@ -131,6 +128,8 @@ public class InmuebleServiceImpl implements InmuebleService {
 
 
             nuevoInmueble = inmuebleRepository.save(nuevoInmueble);
+            userService.enviarCorreo(nuevoInmueble.getPropietario().getEmail(),"Inmueble creado correctamente", "Su inmueble ha sido creado exitosamente con el id: "+nuevoInmueble.getId());
+            logsService.registrarLog("Inmueble creado correctamente, a continuación el id del inmueble recien creado "+nuevoInmueble.getId(),nuevoInmueble.getPropietario().getId());
 
             return inmuebleMapper.toResponse(nuevoInmueble);
 
@@ -141,38 +140,6 @@ public class InmuebleServiceImpl implements InmuebleService {
         }
     }
 
-    private String guardarArchivo(MultipartFile archivo, String carpetaDestino,String correoUsuario) throws IOException {
-        // Crear carpeta si no existe
-        Path carpeta = Paths.get(carpetaDestino);
-        if (!Files.exists(carpeta)) {
-            Files.createDirectories(carpeta);
-        }
-
-        // Generar nombre único
-        String nombreArchivo = UUID.randomUUID() + "_" + archivo.getOriginalFilename()+"_"+correoUsuario;
-        Path rutaArchivo = carpeta.resolve(nombreArchivo);
-
-        // Guardar físicamente
-        Files.copy(archivo.getInputStream(), rutaArchivo, StandardCopyOption.REPLACE_EXISTING);
-
-        return rutaArchivo.toString(); // O devolver una ruta relativa si prefieres
-    }
-
-
-    @Override
-    public InmuebleResponse crearInmueble(InmuebleDto inmuebleDto) {
-        try{
-            var nuevoInmueble = inmuebleMapper.toEntity(inmuebleDto);
-            User agenteMenorCarga = buscarAgenteConMenorCarga();
-            nuevoInmueble.setEstadoTransa(EstadoTransaccion.PENDIENTE);
-            nuevoInmueble.setAgenteAsociado(agenteMenorCarga);
-            nuevoInmueble.setAsesorLegal(agenteMenorCarga);
-            inmuebleRepository.save(nuevoInmueble);
-            return inmuebleMapper.toResponse(nuevoInmueble);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     @Override
     public User buscarAgenteConMenorCarga() {
@@ -228,14 +195,16 @@ public class InmuebleServiceImpl implements InmuebleService {
         return usuarioMenorCarga;
     }
 
-
-
     @Override
     public void eliminarInmueble(Long id) {
         try {
             var inmueble = inmuebleRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("Inmueble no encontrado con id: " + id));
+            cloudinaryService.eliminarArchivo(inmueble, "image", inmueble.getImagenes().size());
+            cloudinaryService.eliminarArchivo(inmueble, "raw", inmueble.getDocumentosImportantes().size());
+
             inmuebleRepository.deleteById(id);
+            logsService.registrarLog("Inmueble eliminado correctamente",inmueble.getPropietario().getId());
         } catch (Exception e) {
             throw new RuntimeException("Error al eliminar el inmueble: " + e.getMessage(), e);
         }
@@ -248,6 +217,7 @@ public class InmuebleServiceImpl implements InmuebleService {
                     .orElseThrow(() -> new RuntimeException("Inmueble no encontrado con id: " + id));
             inmuebleMapper.updateEntityFromDto(inmuebleDto, inmuebleExistente);
             inmuebleRepository.save(inmuebleExistente);
+            logsService.registrarLog("Inmueble actualizado"+inmuebleExistente.getId()+"correctamente",inmuebleExistente.getPropietario().getId());
             return inmuebleMapper.toResponse(inmuebleExistente);
         } catch (Exception e) {
             throw new RuntimeException("Error al actualizar el inmueble: " + e.getMessage(), e);
@@ -266,6 +236,10 @@ public class InmuebleServiceImpl implements InmuebleService {
 
             inmuebleRepository.save(inmuebleMandar);
 
+            userService.enviarCorreo(inmuebleMandar.getPropietario().getEmail(),"Estado del inmueble actualizado", "Su inmueble acaba de ser actualizado a: "+inmuebleMandar.getEstadoTransa());
+
+            logsService.registrarLog("El estado del inmueble"+inmuebleMandar.getId() +"ha sido moficiado por: "+estadoTransa,inmuebleMandar.getAgenteAsociado().getId());
+
             return inmuebleMapper.toResponse(inmuebleMandar);
         }
         catch (Exception e)
@@ -274,78 +248,6 @@ public class InmuebleServiceImpl implements InmuebleService {
         }
     }
 
-    @Override
-    public InmuebleResponse patchInmueble(Long id, InmueblePatchDto patchDto) {
-        /*
-        try {
-            var inmueble = inmuebleRepository.findById(id)
-                    .orElseThrow(() -> new RuntimeException("Inmueble no encontrado con id: " + id));
-            if (patchDto.departamento() != null) inmueble.setDepartamento(patchDto.departamento());
-            // Ubicacion: no es un enum, es un objeto. No se puede actualizar por PATCH con un String.
-            if (patchDto.tipoNegocio() != null) {
-                try {
-                    inmueble.setTipoNegocio(TipoNegocio.valueOf(patchDto.tipoNegocio()));
-                } catch (Exception e) {
-                    throw new RuntimeException("Tipo de negocio inválido: " + patchDto.tipoNegocio());
-                }
-            }
-            if (patchDto.tipo() != null) {
-                try {
-                    inmueble.setTipo(TipoInmueble.valueOf(patchDto.tipo()));
-                } catch (Exception e) {
-                    throw new RuntimeException("Tipo de inmueble inválido: " + patchDto.tipo());
-                }
-            }
-            if (patchDto.medidas() != null) inmueble.setMedidas(Double.parseDouble(patchDto.medidas()));
-            if (patchDto.habitaciones() != null) inmueble.setHabitaciones(patchDto.habitaciones());
-            if (patchDto.banos() != null) inmueble.setBanos(patchDto.banos());
-            if (patchDto.descripcion() != null) inmueble.setDescripcion(patchDto.descripcion());
-            if (patchDto.estado() != null) {
-                try {
-                    inmueble.setEstado(EstadoInmueble.valueOf(patchDto.estado()));
-                } catch (Exception e) {
-                    throw new RuntimeException("Estado de inmueble inválido: " + patchDto.estado());
-                }
-            }
-            if (patchDto.precio() != null) inmueble.setPrecio(patchDto.precio());
-            if (patchDto.estadoTransa() != null) {
-                try {
-                    inmueble.setEstadoTransa(EstadoTransaccion.valueOf(patchDto.estadoTransa()));
-                } catch (Exception e) {
-                    throw new RuntimeException("Estado de transacción inválido: " + patchDto.estadoTransa());
-                }
-            }
-            if (patchDto.ciudad() != null) inmueble.setCiudad(patchDto.ciudad());
-            if (patchDto.codigoInmueble() != null) inmueble.setCodigoInmueble(Integer.parseInt(patchDto.codigoInmueble()));
-            if (patchDto.cantidadParqueaderos() != null) inmueble.setCantidadParqueaderos(patchDto.cantidadParqueaderos());
-            if (patchDto.telfonoContacto() != null) inmueble.setTelfonoContacto(patchDto.telfonoContacto());
-            if (patchDto.nombreContacto() != null) inmueble.setNombreContacto(patchDto.nombreContacto());
-            if (patchDto.correoContacto() != null) inmueble.setCorreoContacto(patchDto.correoContacto());
-            if (patchDto.imagenes() != null) {
-                // Aquí deberías mapear los IDs a entidades Imagen si es necesario
-                // inmueble.setImagenes(listaDeImagenes);
-            }
-            // No se actualizan: agenteAsociado, asesorLegal, historial, documentosImportantes, ubicacion
-            inmuebleRepository.save(inmueble);
-            return inmuebleMapper.toResponse(inmueble);
-        } catch (Exception e) {
-            throw new RuntimeException("Error al actualizar parcialmente el inmueble: " + e.getMessage(), e);
-        }
-
-         */
-        return null;
-    }
-
-    @Override
-    public InmuebleResponse obtenerInmueble(Long id) {
-        try {
-            var inmueble = inmuebleRepository.findById(id)
-                    .orElseThrow(() -> new RuntimeException("Inmueble no encontrado con id: " + id));
-            return inmuebleMapper.toResponse(inmueble);
-        } catch (Exception e) {
-            throw new RuntimeException("Error al obtener el inmueble: " + e.getMessage(), e);
-        }
-    }
 
     @Override
     public List<InmuebleResponse> buscarInmueblesPorUsuario(String propietarioEmail) {
@@ -380,6 +282,7 @@ public class InmuebleServiceImpl implements InmuebleService {
 
             List<Inmueble> inmuebles = inmuebleRepository.findInmueblesByAgenteAsociado(agenteAsociado);
 
+
             if (inmuebles.isEmpty())
             {
                 throw new ResourceNotFoundException("No se encontraron inmuebles para el usuario con id: " + agenteAsociado.getId());
@@ -402,31 +305,10 @@ public class InmuebleServiceImpl implements InmuebleService {
 
             Optional<Inmueble> inmuebleAsociado=inmuebleRepository.findInmuebleByAgenteAsociado(agenteAsociado);
 
+            System.out.println (inmuebleAsociado.get().getImagenes().getFirst().getUrl());
+
             Inmueble inmuebleMandar=inmuebleAsociado.orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
             return inmuebleMapper.toResponse(inmuebleMandar);
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException("Error al buscar inmueble por agente: " + e.getMessage(), e);
-        }
-
-    }
-
-    @Override
-    public Inmueble buscarInmueblePorAgenteSinResponse(String emailAgente) {
-        try
-        {
-
-            Optional<User> usuario=userRepository.findByEmail(emailAgente);
-
-            User agenteAsociado=usuario.orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-
-
-            Optional<Inmueble> inmuebleAsociado=inmuebleRepository.findInmuebleByAgenteAsociado(agenteAsociado);
-
-            System.out.println("Llega hasta aqui 2");
-
-            return inmuebleAsociado.orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
         }
         catch (Exception e)
         {
@@ -446,6 +328,8 @@ public class InmuebleServiceImpl implements InmuebleService {
             estados.add(EstadoTransaccion.VENDIDO);
             estados.add(EstadoTransaccion.PENDIENTE);
             var lista = inmuebleRepository.findByEstadoTransaNotIn(estados);
+
+          //  System.out.println ("Enviando todo: "+lista.get(0).get);
             return lista.stream().map(inmuebleMapper::toResponse).toList();
         }
         catch (Exception e)
@@ -453,5 +337,4 @@ public class InmuebleServiceImpl implements InmuebleService {
             throw new RuntimeException("Error al obtener la lista de inmuebles: " + e.getMessage(), e);
         }
     }
-
 }

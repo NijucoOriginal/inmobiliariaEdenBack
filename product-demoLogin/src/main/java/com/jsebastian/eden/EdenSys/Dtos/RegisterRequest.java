@@ -32,9 +32,11 @@ public record RegisterRequest(
         @Pattern(
                 regexp = "^(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$",
                 message = "La contraseña debe tener al menos una mayúscula, un número, un carácter especial y mínimo 8 caracteres")
-        String contrasena
+        String contrasena,
+
+        String recaptchaToken
 ) {
     public CrearUsuarioDto toCrearUsuarioDto() {
-        return new CrearUsuarioDto(nombre, apellido, documentoIdentidad, telefono, email, contrasena, Rol.PENDIENTE);
+        return new CrearUsuarioDto(nombre, apellido, documentoIdentidad, telefono, email, contrasena, Rol.PENDIENTE,recaptchaToken);
     }
 }

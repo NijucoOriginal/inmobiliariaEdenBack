@@ -1,17 +1,17 @@
 package com.jsebastian.eden.EdenSys.services;
 
 import ch.qos.logback.classic.Logger;
-import com.jsebastian.eden.EdenSys.Dtos.CambiarContrasenaDto;
-import com.jsebastian.eden.EdenSys.Dtos.UserResponse;
-import com.jsebastian.eden.EdenSys.Dtos.UsuarioResponse;
+import com.jsebastian.eden.EdenSys.Dtos.*;
 import com.jsebastian.eden.EdenSys.domain.Rol;
 import com.jsebastian.eden.EdenSys.domain.User;
+import com.jsebastian.eden.EdenSys.repository.LogsRepository;
 import com.jsebastian.eden.EdenSys.repository.UserRepository;
-import com.jsebastian.eden.EdenSys.Dtos.CrearUsuarioDto;
 import com.jsebastian.eden.EdenSys.mappers.UserMapper;
 import com.jsebastian.eden.EdenSys.exceptions.ValueConflictException;
 // API DE MENSAJES
 
+import com.jsebastian.eden.EdenSys.services.interfaces.CaptchaService;
+import com.jsebastian.eden.EdenSys.services.interfaces.LogsService;
 import com.jsebastian.eden.EdenSys.services.interfaces.UserService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.LoggerFactory;
@@ -27,8 +27,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-
-
 
 /**
  * Implementación del servicio para gestionar operaciones relacionadas con usuarios
@@ -48,6 +46,12 @@ public class UserServiceImpl implements UserService {
 
     @Value("${spring.mail.username}")
     private String fromEmail;
+
+    @Autowired
+    private LogsService logsService;
+
+    @Autowired
+    private CaptchaService captchaService;
 
     private static final Logger logger = (Logger) LoggerFactory.getLogger(UserServiceImpl.class);
 
@@ -122,6 +126,8 @@ public class UserServiceImpl implements UserService {
                     enviarCodigoEmailActivacion(usuario);
                     userRepository.save(usuario);
 
+                    logsService.registrarLog("Usuario vinculado nuevamente correctamente",usuario.getId());
+
                     logger.info("Usuario pendiente actualizado y código reenviado: {}", emailNormalizado);
 
                     return userMapper.toUsuarioResponse(usuario);
@@ -155,6 +161,8 @@ public class UserServiceImpl implements UserService {
             enviarCodigoEmailActivacion(nuevoUsuario);
             userRepository.save(nuevoUsuario);
 
+
+            logsService.registrarLog("Usuario creado correctamente, esperando validación",nuevoUsuario.getId());
             logger.info("Nuevo usuario creado con email: {}", emailNormalizado);
 
             return userMapper.toUsuarioResponse(nuevoUsuario);
@@ -199,6 +207,25 @@ public class UserServiceImpl implements UserService {
 
 
         mailSender.send(mail);
+    }
+
+
+    public void procesarContacto(ContactoDto contacto) {
+
+        String mensajeFinal =
+                "Nuevo mensaje de contacto\n\n" +
+                        "Nombre: " + contacto.nombre() + "\n" +
+                        "Teléfono: " + contacto.telefono() + "\n" +
+                        "Correo: " + contacto.correo() + "\n\n" +
+                        "Mensaje:\n" + contacto.mensaje();
+
+       enviarCorreo(
+                "inmobiliariaedenco@gmail.com",
+                "Nuevo contacto - " + contacto.asunto(),
+                mensajeFinal
+        );
+
+        enviarCorreo(contacto.correo(),"Recibimos su correo","Pronto te responderemos tus inquietudes");
     }
 
 
@@ -262,7 +289,9 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public void eliminarUsuario(Long id) {
+        Optional<User> usuario=userRepository.findById(id);
         userRepository.deleteById(id);
+        logsService.registrarLog("Usuario eliminado correctamente",usuario.get().getId());
     }
 
     /**
@@ -274,6 +303,7 @@ public class UserServiceImpl implements UserService {
         Optional<User> usuario = userRepository.findByEmail(email);
         if (usuario.isPresent()) {
             userRepository.delete(usuario.get());
+            logsService.registrarLog("Usuario eliminado correctamente",usuario.get().getId());
         }
     }
 
@@ -288,6 +318,7 @@ public class UserServiceImpl implements UserService {
             usuarioExistente.setRol(Rol.DESVINCULADO);
 
             userRepository.save(usuarioExistente);
+            logsService.registrarLog("Usuario desvinculado correctamente",usuarioExistente.getId());
             return "Usuario eliminado correctamente";
         });
     }
@@ -343,32 +374,6 @@ public class UserServiceImpl implements UserService {
         return Optional.empty();
     }
 
-    /*@Override
-    public Optional<String> actualizarUsuarioEmail(String email, CrearUsuarioDto user) {
-        return userRepository.findByEmail(email).map(usuarioExistente -> {
-
-            if(!user.nombre().equals(usuarioExistente.getNombre()))
-            {
-                usuarioExistente.setNombre(user.nombre());
-            }
-            if (!user.apellido().equals(usuarioExistente.getApellido()))
-            {
-                usuarioExistente.setApellido(user.apellido());
-            }
-            if(!user.telefono().equals(usuarioExistente.getTelefono()))
-            {
-                usuarioExistente.setTelefono(user.telefono());
-            }
-            if(!user.documentoIdentidad().equals(usuarioExistente.getDocumentoIdentidad()))
-            {
-                usuarioExistente.setDocumentoIdentidad(user.documentoIdentidad());
-            }
-            userRepository.save(usuarioExistente);
-            return generarToken(userRepository.save(usuarioExistente));
-        });
-    }
-
-     */
 
     @Override
     public String actualizarUsuarioEmail(String email, CrearUsuarioDto user) {
@@ -389,6 +394,7 @@ public class UserServiceImpl implements UserService {
         }
 
         var usuarioActualizado = userRepository.save(usuarioExistente);
+        logsService.registrarLog("Usuario actualizado correctamente",usuarioExistente.getId());
         return generarToken(usuarioActualizado);
     }
 
@@ -406,6 +412,7 @@ public class UserServiceImpl implements UserService {
             User usuario = usuarioOptional.get();
 
             if (usuario.getFechaCreacionCodigo().isBefore(LocalDateTime.now().minusMinutes(10))) { //10 minutos
+                logsService.registrarLog("El codigo del usuario ha expirado correctamente",usuario.getId());
                 logger.warn("Código expirado para usuario {}", usuario.getEmail());
                 usuario.setRol(Rol.PENDIENTE);
                 usuario.setCodigoActivacion(null);
@@ -423,6 +430,7 @@ public class UserServiceImpl implements UserService {
 
             // Actualizar el rol del usuario a CLIENTE
             usuario.setRol(Rol.CLIENTE);
+            logsService.registrarLog("El usuario ha pasado a ser un cliente de la aplicación",usuario.getId());
             usuario.setCodigoActivacion(null); // Eliminar el código de activación
             userRepository.save(usuario);
 
@@ -442,7 +450,7 @@ public class UserServiceImpl implements UserService {
      * @throws IllegalArgumentException si las credenciales son inválidas
      */
     @Override
-    public String validarCredencialesYGenerarToken(String email, String contrasena) {
+    public String validarCredencialesYGenerarToken(String email, String contrasena,String captchaToken) {
         Optional<User> usuarioOptional = userRepository.findByEmail(email);
 
         System.out.println("Validando credenciales para el email: " + email);
@@ -455,72 +463,64 @@ public class UserServiceImpl implements UserService {
                 if (passwordEncoder.matches(contrasena, usuario.getContrasena())) {
                     // Generar el token JWT
                     System.out.println("Contraseña válida, token generado.");
+                    logsService.registrarLog("Inicio de sesion exitoso ",usuario.getId());
                     return generarToken(usuario);
                 } else {
-                    throw new IllegalArgumentException("Contraseña incorrecta.");
+                    throw new ValueConflictException("Contraseña incorrecta.");
                 }
             }
             else
             {
                 System.out.print("El usuario ya se encuentra desvinculado");
+                logsService.registrarLog("Inicio de sesion no exitoso",0L);
                 throw new ValueConflictException("El usuario ya se encuentra desvinculado");
             }
         }
         else
         {
-            throw new IllegalArgumentException("Usuario no encontrado con el email proporcionado.");
+            throw new ValueConflictException("Usuario no encontrado con el email proporcionado.");
         }
     }
 
     private boolean esContrasenaSegura(String contrasena) {
         if (contrasena == null) return false;
 
-        // Regex:
-        // (?=.*[a-z])  -> al menos una minúscula
-        // (?=.*[A-Z])  -> al menos una mayúscula
-        // (?=.*\\d)    -> al menos un número
-        // (?=.*[^a-zA-Z0-9]) -> al menos un símbolo
-        // .{8,}        -> mínimo 8 caracteres
-
         String patron = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^a-zA-Z0-9]).{8,}$";
 
         return contrasena.matches(patron);
     }
-    public void enviarCodigoRecuperacionContrasena(String email) {
+    public void enviarCodigoRecuperacionContrasena(SolicitarRecuperacionDto solicitarRecuperacionDto) {
 
-        String emailNormalizado = email.trim().toLowerCase();
+        String emailNormalizado = solicitarRecuperacionDto.email().trim().toLowerCase();
 
         Optional<User> usuarioOpt = userRepository.findByEmail(emailNormalizado);
 
-        // No revelar si el usuario existe (práctica profesional)
+        // CAMBIO: Ahora sí lanzamos un error si no existe
         if (usuarioOpt.isEmpty()) {
             logger.warn("Solicitud de recuperación para email inexistente: {}", emailNormalizado);
-            return;
+            throw new ValueConflictException("El correo proporcionado no se encuentra registrado en nuestro sistema.");
         }
 
         User usuario = usuarioOpt.get();
 
+        // CAMBIO: También para usuarios desvinculados
         if (usuario.getRol() == Rol.DESVINCULADO) {
             logger.warn("Intento de recuperación para usuario desvinculado: {}", emailNormalizado);
-            return;
+            throw new ValueConflictException("Esta cuenta ha sido desvinculada. Contacta al administrador.");
         }
 
-        // Generar código seguro
+        // ... resto del código (generar código, guardar y enviar correo) ...
         java.security.SecureRandom random = new java.security.SecureRandom();
         String codigo = String.format("%06d", random.nextInt(1_000_000));
 
         usuario.setCodigoActivacion(codigo);
         usuario.setFechaCreacionCodigo(LocalDateTime.now());
-
         userRepository.save(usuario);
 
         String subject = "Recuperación de contraseña";
-        String mensaje = "Hola " + usuario.getNombre() +
-                ", tu código para restablecer la contraseña es: " + codigo +
-                "\nEste código expira en 10 minutos.";
+        String mensaje = "Hola " + usuario.getNombre() + ", tu código es: " + codigo;
 
         enviarCorreo(usuario.getEmail(), subject, mensaje);
-
         logger.info("Código de recuperación enviado a {}", emailNormalizado);
     }
 
@@ -575,6 +575,7 @@ public class UserServiceImpl implements UserService {
 
         userRepository.save(usuario);
 
+        logsService.registrarLog("Contraseña del usuario actualizada correctamente",usuario.getId());
         logger.info("Contraseña actualizada correctamente para {}", emailNormalizado);
 
         return true;

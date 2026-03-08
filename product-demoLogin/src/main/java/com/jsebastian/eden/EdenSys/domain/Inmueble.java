@@ -1,10 +1,7 @@
 package com.jsebastian.eden.EdenSys.domain;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.*;
 import lombok.*;
 
 import java.io.File;
@@ -65,7 +62,7 @@ public class Inmueble {
     @JoinColumn(name = "asesor_legal_id")
     private User asesorLegal;
 
-    @Positive
+    @PositiveOrZero
     private int cantidadParqueaderos;
 
     private String telefonoContacto;

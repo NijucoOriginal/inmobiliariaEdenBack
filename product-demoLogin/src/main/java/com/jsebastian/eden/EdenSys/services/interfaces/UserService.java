@@ -1,11 +1,9 @@
 package com.jsebastian.eden.EdenSys.services.interfaces;
 
-import com.jsebastian.eden.EdenSys.Dtos.CambiarContrasenaDto;
-import com.jsebastian.eden.EdenSys.Dtos.UserResponse;
-import com.jsebastian.eden.EdenSys.Dtos.UsuarioResponse;
+import com.jsebastian.eden.EdenSys.Dtos.*;
 import com.jsebastian.eden.EdenSys.domain.User;
-import com.jsebastian.eden.EdenSys.Dtos.CrearUsuarioDto;
 import com.jsebastian.eden.EdenSys.exceptions.ValueConflictException;
+import jakarta.validation.Valid;
 
 import java.util.List;
 import java.util.Optional;
@@ -110,7 +108,7 @@ public interface UserService {
      * @return el token JWT generado
      * @throws IllegalArgumentException si las credenciales son inválidas
      */
-    String validarCredencialesYGenerarToken(String email, String contrasena);
+    String validarCredencialesYGenerarToken(String email, String contrasena,String captcha);
 
     /**
      * Busca por email y valida si el codigo es correcto si es correcto cambia contrasena
@@ -121,10 +119,14 @@ public interface UserService {
 
     /**
      * Envia codigo para recuperar contraseña
-     * @param email busca el correo y envia un codigo para la recuperacion de contraseña
+     * @param solicitarRecuperacionDto busca el correo y envia un codigo para la recuperacion de contraseña
      * @return boolean
      */
-    void enviarCodigoRecuperacionContrasena(String email);
+    void enviarCodigoRecuperacionContrasena(SolicitarRecuperacionDto solicitarRecuperacionDto);
 
     String generarToken(User usuario);
+
+    void enviarCorreo(String mail, String asunto, String mensaje);
+
+    void procesarContacto(@Valid ContactoDto contacto);
 }

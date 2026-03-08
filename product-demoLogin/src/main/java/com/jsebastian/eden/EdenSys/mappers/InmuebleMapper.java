@@ -1,8 +1,8 @@
 package com.jsebastian.eden.EdenSys.mappers;
 
+import com.jsebastian.eden.EdenSys.Dtos.*;
 import com.jsebastian.eden.EdenSys.domain.Inmueble;
-import com.jsebastian.eden.EdenSys.Dtos.InmuebleDto;
-import com.jsebastian.eden.EdenSys.Dtos.InmuebleResponse;
+import com.jsebastian.eden.EdenSys.domain.User;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import com.jsebastian.eden.EdenSys.domain.Imagen;
@@ -31,6 +31,7 @@ public interface InmuebleMapper {
     @Mapping(target = "correoContacto", source = "correoContacto")
     Inmueble toEntity(InmuebleDto dto);
 
+    @Mapping(target = "id", source = "id")
     @Mapping(target = "longitud", source = "longitud")
     @Mapping(target = "latitud", source = "latitud")
     @Mapping(target = "tipoNegocio", source = "tipoNegocio")
@@ -42,16 +43,28 @@ public interface InmuebleMapper {
     @Mapping(target = "estado", source = "estado")
     @Mapping(target = "precio", source = "precio")
     @Mapping(target = "estadoTransa", source = "estadoTransa")
-    @Mapping(target = "asesorLegal", expression = "java(entity.getAsesorLegal() != null ? entity.getAsesorLegal().getId() : null)")
-    @Mapping(target = "agenteAsociado", expression = "java(entity.getAgenteAsociado() != null ? entity.getAgenteAsociado().getId() : null)")
-    @Mapping(target = "propietario", expression = "java(entity.getPropietario() != null ? entity.getPropietario().getId() : null)")
     @Mapping(target = "cantidadParqueaderos", source = "cantidadParqueaderos")
     @Mapping(target = "telefonoContacto", source = "telefonoContacto")
     @Mapping(target = "nombreContacto", source = "nombreContacto")
     @Mapping(target = "correoContacto", source = "correoContacto")
-    @Mapping(target = "imagenes", expression = "java(entity.getImagenes().stream().map(Imagen::getUrl).toList())")
-    @Mapping(target = "id", source = "id")
+
+    @Mapping(target = "asesorLegal", source = "asesorLegal")
+
+    @Mapping(target = "agenteAsociado", source = "agenteAsociado")
+
+    @Mapping(target = "propietario", source = "propietario")
+
+    @Mapping(target = "imagenes",
+            expression = "java(entity.getImagenes() != null ? entity.getImagenes().stream().map(Imagen::getUrl).toList() : java.util.Collections.emptyList())")
+
+    @Mapping(target = "documentosImportantes",
+            expression = "java(entity.getDocumentosImportantes() != null ? entity.getDocumentosImportantes().stream().map(doc -> doc.getRutaArchivo()).toList() : java.util.Collections.emptyList())")
+
     InmuebleResponse toResponse(Inmueble entity);
+
+    AgenteResponse toAgenteResponse(User agente);
+    PropietarioResponse toPropietarioResponse(User propietario);
+    AsesorResponse toAsesorResponse(User asesor);
 
 
     // Método utilitario para actualizar los campos de una entidad Inmueble existente con los valores de un InmuebleDto.
