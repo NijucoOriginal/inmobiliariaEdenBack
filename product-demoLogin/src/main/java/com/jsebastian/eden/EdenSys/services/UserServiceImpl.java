@@ -491,39 +491,36 @@ public class UserServiceImpl implements UserService {
     }
     public void enviarCodigoRecuperacionContrasena(SolicitarRecuperacionDto solicitarRecuperacionDto) {
 
-        String emailNormalizado =solicitarRecuperacionDto.email().trim().toLowerCase();
+        String emailNormalizado = solicitarRecuperacionDto.email().trim().toLowerCase();
 
         Optional<User> usuarioOpt = userRepository.findByEmail(emailNormalizado);
 
-        // No revelar si el usuario existe (práctica profesional)
+        // CAMBIO: Ahora sí lanzamos un error si no existe
         if (usuarioOpt.isEmpty()) {
             logger.warn("Solicitud de recuperación para email inexistente: {}", emailNormalizado);
-            return;
+            throw new ValueConflictException("El correo proporcionado no se encuentra registrado en nuestro sistema.");
         }
 
         User usuario = usuarioOpt.get();
 
+        // CAMBIO: También para usuarios desvinculados
         if (usuario.getRol() == Rol.DESVINCULADO) {
             logger.warn("Intento de recuperación para usuario desvinculado: {}", emailNormalizado);
-            return;
+            throw new ValueConflictException("Esta cuenta ha sido desvinculada. Contacta al administrador.");
         }
 
-        // Generar código seguro
+        // ... resto del código (generar código, guardar y enviar correo) ...
         java.security.SecureRandom random = new java.security.SecureRandom();
         String codigo = String.format("%06d", random.nextInt(1_000_000));
 
         usuario.setCodigoActivacion(codigo);
         usuario.setFechaCreacionCodigo(LocalDateTime.now());
-
         userRepository.save(usuario);
 
         String subject = "Recuperación de contraseña";
-        String mensaje = "Hola " + usuario.getNombre() +
-                ", tu código para restablecer la contraseña es: " + codigo +
-                "\nEste código expira en 10 minutos.";
+        String mensaje = "Hola " + usuario.getNombre() + ", tu código es: " + codigo;
 
         enviarCorreo(usuario.getEmail(), subject, mensaje);
-
         logger.info("Código de recuperación enviado a {}", emailNormalizado);
     }
 
