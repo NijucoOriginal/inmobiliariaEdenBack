@@ -472,6 +472,7 @@ public class UserServiceImpl implements UserService {
             else
             {
                 System.out.print("El usuario ya se encuentra desvinculado");
+                logsService.registrarLog("Inicio de sesion no exitoso",0L);
                 throw new ValueConflictException("El usuario ya se encuentra desvinculado");
             }
         }
