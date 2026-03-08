@@ -1,8 +1,6 @@
 package com.jsebastian.eden.EdenSys.Dtos;
 
 import com.jsebastian.eden.EdenSys.domain.*;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.*;
 import java.util.List;
 
 public record InmuebleResponse(
@@ -10,7 +8,7 @@ public record InmuebleResponse(
         double latitud,
         TipoNegocio tipoNegocio,
         AgenteResponse agenteAsociado,
-        long asesorLegal,
+        AsesorResponse asesorLegal,
         TipoInmueble tipo,
         double medidas,
         int habitaciones,
@@ -24,7 +22,7 @@ public record InmuebleResponse(
         String nombreContacto,
         String correoContacto,
         List<String> imagenes,
-        long propietario,
+        PropietarioResponse propietario,
         long id,
         List<String> documentosImportantes
 

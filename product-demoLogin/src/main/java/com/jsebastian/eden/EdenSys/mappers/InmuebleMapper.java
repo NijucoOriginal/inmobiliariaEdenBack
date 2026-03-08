@@ -1,9 +1,7 @@
 package com.jsebastian.eden.EdenSys.mappers;
 
-import com.jsebastian.eden.EdenSys.Dtos.AgenteResponse;
+import com.jsebastian.eden.EdenSys.Dtos.*;
 import com.jsebastian.eden.EdenSys.domain.Inmueble;
-import com.jsebastian.eden.EdenSys.Dtos.InmuebleDto;
-import com.jsebastian.eden.EdenSys.Dtos.InmuebleResponse;
 import com.jsebastian.eden.EdenSys.domain.User;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -50,15 +48,11 @@ public interface InmuebleMapper {
     @Mapping(target = "nombreContacto", source = "nombreContacto")
     @Mapping(target = "correoContacto", source = "correoContacto")
 
-    @Mapping(target = "asesorLegal",
-            expression = "java(entity.getAsesorLegal() != null ? entity.getAsesorLegal().getId() : null)")
+    @Mapping(target = "asesorLegal", source = "asesorLegal")
 
     @Mapping(target = "agenteAsociado", source = "agenteAsociado")
 
-    @Mapping(
-            target = "propietario",
-            expression = "java(entity.getPropietario() != null ? entity.getPropietario().getId() : null)"
-    )
+    @Mapping(target = "propietario", source = "propietario")
 
     @Mapping(target = "imagenes",
             expression = "java(entity.getImagenes() != null ? entity.getImagenes().stream().map(Imagen::getUrl).toList() : java.util.Collections.emptyList())")
@@ -69,6 +63,8 @@ public interface InmuebleMapper {
     InmuebleResponse toResponse(Inmueble entity);
 
     AgenteResponse toAgenteResponse(User agente);
+    PropietarioResponse toPropietarioResponse(User propietario);
+    AsesorResponse toAsesorResponse(User asesor);
 
 
     // Método utilitario para actualizar los campos de una entidad Inmueble existente con los valores de un InmuebleDto.
