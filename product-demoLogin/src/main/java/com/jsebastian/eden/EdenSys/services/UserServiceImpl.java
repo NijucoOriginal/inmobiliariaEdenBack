@@ -466,7 +466,7 @@ public class UserServiceImpl implements UserService {
                     logsService.registrarLog("Inicio de sesion exitoso ",usuario.getId());
                     return generarToken(usuario);
                 } else {
-                    throw new IllegalArgumentException("Contraseña incorrecta.");
+                    throw new ValueConflictException("Contraseña incorrecta.");
                 }
             }
             else
@@ -477,7 +477,7 @@ public class UserServiceImpl implements UserService {
         }
         else
         {
-            throw new IllegalArgumentException("Usuario no encontrado con el email proporcionado.");
+            throw new ValueConflictException("Usuario no encontrado con el email proporcionado.");
         }
     }
 
