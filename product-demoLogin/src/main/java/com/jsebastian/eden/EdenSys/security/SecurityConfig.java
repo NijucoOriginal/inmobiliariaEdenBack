@@ -57,6 +57,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers("/", "/health", "/actuator/**").permitAll()
                         .requestMatchers("/api/usuarios").permitAll()
+                        .requestMatchers("/actuator/**").permitAll()
+                        .requestMatchers("/api/usuarios").permitAll() // crear usuario (registro)
+
                         .requestMatchers("/api/auth/activate/**").permitAll()
                         .requestMatchers("/api/auth/login").permitAll()
                         .requestMatchers("/api/auth/contacto").permitAll()
