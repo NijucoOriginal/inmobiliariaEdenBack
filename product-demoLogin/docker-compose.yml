@@ -1,0 +1,51 @@
+services:
+  # Tu aplicacion Spring Boot
+  app-backend:
+    build: .             # Usa tu Dockerfile multi-etapa actual
+    container_name: spring-boot-app
+    ports:
+      - "8080:8080"
+    environment:
+      # Sobrescribimos las variables de tu application.properties
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://host.docker.internal:5432/bd_eden
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=admin
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+      - SMTP_FROM_EMAIL=${SMTP_FROM_EMAIL}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - FRONTEND_URL=${FRONTEND_URL}
+      - FRONTEND_LOCAL_URL=${FRONTEND_LOCAL_URL}
+    extra_hosts:
+      - "host.docker.internal:host-gateway" # Permite a Docker ver tu Postgres local
+    networks:
+      - monitoring-network
+
+  # Prometheus: El recolector de datos
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - monitoring-network
+
+  # Grafana: El panel visual
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    networks:
+      - monitoring-network
+    depends_on:
+      - prometheus
+
+networks:
+  monitoring-network:
+    driver: bridge

@@ -33,4 +33,8 @@ build/
 .vscode/
 
 configDataEmails.env
+
 product-demoLogin/.env
+
+.env
+
