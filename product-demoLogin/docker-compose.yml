@@ -21,8 +21,6 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - RECAPTCHA_SECRET=${RECAPTCHA_SECRET}
       - PROMETHEUS_URL=${PROMETHEUS_URL}
-    extra_hosts:
-      - "host.docker.internal:host-gateway" # Permite a Docker ver tu Postgres local
     networks:
       - monitoring-network
 
