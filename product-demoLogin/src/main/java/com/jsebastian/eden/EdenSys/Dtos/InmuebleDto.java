@@ -27,5 +27,7 @@ public class InmuebleDto {
     private String telefonoContacto;
     private String nombreContacto;
     private String correoContacto;
+    private String departamento;
+    private String ciudad;
 }
 
