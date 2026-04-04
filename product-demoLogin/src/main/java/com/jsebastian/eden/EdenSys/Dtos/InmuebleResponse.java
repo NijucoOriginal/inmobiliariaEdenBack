@@ -24,6 +24,8 @@ public record InmuebleResponse(
         List<String> imagenes,
         PropietarioResponse propietario,
         long id,
-        List<String> documentosImportantes
+        List<String> documentosImportantes,
+        String departamento,
+        String ciudad
 
 ) {}

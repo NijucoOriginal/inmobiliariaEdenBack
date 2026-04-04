@@ -29,6 +29,9 @@ public interface InmuebleMapper {
     @Mapping(target = "telefonoContacto", source = "telefonoContacto")
     @Mapping(target = "nombreContacto", source = "nombreContacto")
     @Mapping(target = "correoContacto", source = "correoContacto")
+
+    @Mapping(target = "departamento", source = "departamento")
+    @Mapping(target = "ciudad", source = "ciudad")
     Inmueble toEntity(InmuebleDto dto);
 
     @Mapping(target = "id", source = "id")
@@ -60,6 +63,8 @@ public interface InmuebleMapper {
     @Mapping(target = "documentosImportantes",
             expression = "java(entity.getDocumentosImportantes() != null ? entity.getDocumentosImportantes().stream().map(doc -> doc.getRutaArchivo()).toList() : java.util.Collections.emptyList())")
 
+    @Mapping(target = "departamento", source = "departamento")
+    @Mapping(target = "ciudad", source = "ciudad")
     InmuebleResponse toResponse(Inmueble entity);
 
     AgenteResponse toAgenteResponse(User agente);
