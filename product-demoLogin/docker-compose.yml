@@ -7,9 +7,9 @@ services:
       - "8080:8080"
     environment:
       # Sobrescribimos las variables de tu application.properties
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://host.docker.internal:5432/bd_eden
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=admin
+      - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL}
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${NEON_PASSWORD}
       - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
       - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
       - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
@@ -17,6 +17,10 @@ services:
       - SMTP_PASSWORD=${SMTP_PASSWORD}
       - FRONTEND_URL=${FRONTEND_URL}
       - FRONTEND_LOCAL_URL=${FRONTEND_LOCAL_URL}
+      - CLOUDFRONT_URL=${CLOUDFRONT_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - RECAPTCHA_SECRET=${RECAPTCHA_SECRET}
+      - PROMETHEUS_URL=${PROMETHEUS_URL}
     extra_hosts:
       - "host.docker.internal:host-gateway" # Permite a Docker ver tu Postgres local
     networks:
