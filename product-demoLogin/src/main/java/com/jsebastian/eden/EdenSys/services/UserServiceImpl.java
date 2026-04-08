@@ -13,6 +13,7 @@ import com.jsebastian.eden.EdenSys.exceptions.ValueConflictException;
 import com.jsebastian.eden.EdenSys.services.interfaces.CaptchaService;
 import com.jsebastian.eden.EdenSys.services.interfaces.LogsService;
 import com.jsebastian.eden.EdenSys.services.interfaces.UserService;
+import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +22,10 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
+import org.springframework.mail.javamail.MimeMessageHelper;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -191,22 +196,61 @@ public class UserServiceImpl implements UserService {
         nuevoUsuario.setCodigoActivacion(codigo);
         String to = nuevoUsuario.getEmail();
         String subject = "Código de activación de tu cuenta";
-        String content = "Hola, " + nuevoUsuario.getNombre() + ". Tu código de activación es: " + codigo;
+        String content = "Hola, " + nuevoUsuario.getNombre() + ".\n\nTu código de activación es: " + codigo;
 
         enviarCorreo(to, subject, content);
     }
 
     public void enviarCorreo(String destino, String asunto, String mensaje) {
-        SimpleMailMessage mail = new SimpleMailMessage();
-        mail.setTo(destino);
-        mail.setSubject(asunto);
-        mail.setText(mensaje);
-        mail.setFrom(fromEmail);
+        try {
+            MimeMessage mail = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mail, true);
 
-        System.out.println(mail.getFrom());
+            helper.setTo(destino);
+            helper.setSubject(asunto);
+            helper.setFrom(fromEmail);
 
+            String contenidoHtml = """
+            <html>
+                <body style="margin:0; padding:0; font-family: Arial, sans-serif; background-color:#f4f4f4;">
+                    
+                    <div style="max-width:600px; margin:auto; background:white; border-radius:10px; overflow:hidden;">
+                        
+                        <!-- HEADER -->
+                        <div style="background-color:#1abc9c; padding:20px; text-align:center;">
+                            <h1 style="color:white; margin:0;">EDÉN</h1>
+                            <p style="color:white; margin:0;">Tu hogar ideal te espera</p>
+                        </div>
 
-        mailSender.send(mail);
+                        <!-- CONTENIDO -->
+                        <div style="padding:30px;">
+                            
+                            <p style="color:#2c3e50; font-size:16px; white-space: pre-line;">
+                                %s
+                            </p>
+
+                        </div>
+
+                        <!-- FOOTER -->
+                        <div style="background-color:#2c3e50; padding:20px; text-align:center;">
+                            <p style="color:white; font-size:12px; margin:0;">
+                                © 2026 EDÉN Inmobiliaria
+                            </p>
+                        </div>
+
+                    </div>
+
+                </body>
+            </html>
+        """.formatted(mensaje);
+
+            helper.setText(contenidoHtml, true);
+
+            mailSender.send(mail);
+
+        } catch (MessagingException e) {
+            e.printStackTrace();
+        }
     }
 
 
