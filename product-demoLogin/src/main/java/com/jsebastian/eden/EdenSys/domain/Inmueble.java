@@ -84,4 +84,10 @@ public class Inmueble {
     @Min(-180)
     @Max(180)
     private double longitud;
+
+    @Column
+    private String departamento;
+
+    @Column
+    private String ciudad;
 }
