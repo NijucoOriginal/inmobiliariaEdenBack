@@ -22,8 +22,8 @@ public class MensajeServieImpl implements MensajeService {
     }
 
     @Override
-    public List<Mensaje> getChat(String user1, String user2) {
+    public List<Mensaje> getChat(String emisor, String receptor) {
         return mensajeRepository
-                .findBySenderAndReceiverOrReceiverAndSender(user1, user2, user1, user2);
+                .findByEmisorAndReceptorOrReceptorAndEmisor(emisor, receptor, receptor, emisor);
     }
 }

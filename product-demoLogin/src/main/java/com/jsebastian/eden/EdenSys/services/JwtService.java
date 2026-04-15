@@ -47,7 +47,6 @@ public class JwtService {
                 .claim("apellido",user.getApellido())
                 .claim("contrasena",user.getContrasena())
                 .claim("documentoIdentidad",user.getDocumentoIdentidad())
-                .claim("contrasena",user.getContrasena())
                 .setIssuedAt(now)
                 .setExpiration(expirationDate)
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)

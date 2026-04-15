@@ -7,6 +7,6 @@ import java.util.List;
 
 public interface MensajeRepository extends JpaRepository<Mensaje, Long> {
 
-    List<Mensaje> findBySenderAndReceiverOrReceiverAndSender(String emisor, String receptor,
+    List<Mensaje> findByEmisorAndReceptorOrReceptorAndEmisor(String emisor, String receptor,
                                                              String emisor2, String receptor2);
 }

@@ -7,6 +7,8 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -23,4 +25,13 @@ public class User extends Persona {
     private String codigoActivacion;
 
     private LocalDateTime fechaCreacionCodigo;
+
+    // --- NUEVA LISTA DE CONTACTOS ---
+    @ManyToMany
+    @JoinTable(
+            name = "user_contacts",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "contact_id")
+    )
+    private List<User> contactos = new ArrayList<>();
 }
