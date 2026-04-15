@@ -17,6 +17,8 @@ public class InmuebleSpecification {
                 .and(porPrecioMax(filtro.getPrecioMax()))
                 .and(porHabitaciones(filtro.getHabitacionesMin()))
                 .and(porBanos(filtro.getBanosMin()))
+                .and(porEstadoInmueble(filtro.getEstado()))
+                .and(porParqueaderosMin(filtro.getParqueaderosMin()))
                 .and(soloDisponibles());
     }
 
@@ -73,6 +75,11 @@ public class InmuebleSpecification {
     private static Specification<Inmueble> porEstadoInmueble(EstadoInmueble estado) {
         return (root, query, cb) -> estado == null ? null
                 : cb.equal(root.get("estado"), estado);
+    }
+
+    private static Specification<Inmueble> porParqueaderosMin(Integer cantidad) {
+        return (root, query, cb) -> cantidad == null ? null
+                : cb.equal(root.get("cantidadParqueaderos"), cantidad);
     }
 }
 

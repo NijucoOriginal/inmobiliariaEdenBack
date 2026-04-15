@@ -19,5 +19,6 @@ public class InmuebleFiltroDto {
     private Integer banosMin;
     private int pagina = 0;
     private int tamano = 9;
-    private EstadoInmueble estado;;
+    private EstadoInmueble estado;
+    private Integer parqueaderosMin;
 }
