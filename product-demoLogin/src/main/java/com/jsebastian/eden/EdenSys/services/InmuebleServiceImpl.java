@@ -1,6 +1,7 @@
 package com.jsebastian.eden.EdenSys.services;
 
 import com.jsebastian.eden.EdenSys.Dtos.InmuebleDto;
+import com.jsebastian.eden.EdenSys.Dtos.InmuebleFiltroDto;
 import com.jsebastian.eden.EdenSys.Dtos.InmuebleResponse;
 import com.jsebastian.eden.EdenSys.domain.*;
 import com.jsebastian.eden.EdenSys.exceptions.ResourceNotFoundException;
@@ -8,8 +9,13 @@ import com.jsebastian.eden.EdenSys.mappers.InmuebleMapper;
 import com.jsebastian.eden.EdenSys.repository.*;
 import com.jsebastian.eden.EdenSys.services.interfaces.CloudinaryService;
 import com.jsebastian.eden.EdenSys.services.interfaces.InmuebleService;
+import com.jsebastian.eden.EdenSys.specifications.InmuebleSpecification;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -336,5 +342,12 @@ public class InmuebleServiceImpl implements InmuebleService {
         {
             throw new RuntimeException("Error al obtener la lista de inmuebles: " + e.getMessage(), e);
         }
+    }
+    @Override
+    public Page<InmuebleResponse> buscarConFiltros(InmuebleFiltroDto filtro) {
+        Pageable pageable = PageRequest.of(filtro.getPagina(), filtro.getTamano());
+        Specification<Inmueble> spec = InmuebleSpecification.conFiltros(filtro);
+        return inmuebleRepository.findAll(spec, pageable)
+                .map(inmuebleMapper::toResponse);
     }
 }

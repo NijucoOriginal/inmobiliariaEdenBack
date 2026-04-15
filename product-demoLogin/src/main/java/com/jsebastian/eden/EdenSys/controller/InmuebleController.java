@@ -1,6 +1,7 @@
 package com.jsebastian.eden.EdenSys.controller;
 
 import com.jsebastian.eden.EdenSys.Dtos.InmuebleDto;
+import com.jsebastian.eden.EdenSys.Dtos.InmuebleFiltroDto;
 import com.jsebastian.eden.EdenSys.Dtos.InmueblePatchDto;
 import com.jsebastian.eden.EdenSys.Dtos.InmuebleResponse;
 import com.jsebastian.eden.EdenSys.domain.User;
@@ -10,6 +11,7 @@ import com.jsebastian.eden.EdenSys.services.interfaces.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -122,5 +124,11 @@ public class InmuebleController {
         User usuarioNormalucho = userService.buscarPorId(id)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado con id: " + id));
         return ResponseEntity.ok(usuarioNormalucho);
+    }
+
+    @GetMapping("/catalogo")
+    public ResponseEntity<Page<InmuebleResponse>> catalogo(
+            @ModelAttribute InmuebleFiltroDto filtro) {
+        return ResponseEntity.ok(inmuebleService.buscarConFiltros(filtro));
     }
 }
