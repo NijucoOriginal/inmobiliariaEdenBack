@@ -26,4 +26,6 @@ public class MensajeServieImpl implements MensajeService {
         return mensajeRepository
                 .findByEmisorAndReceptorOrReceptorAndEmisor(emisor, receptor, receptor, emisor);
     }
+
+
 }
