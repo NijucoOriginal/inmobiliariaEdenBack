@@ -1,12 +1,14 @@
 package com.jsebastian.eden.EdenSys.services.interfaces;
 
 import com.jsebastian.eden.EdenSys.Dtos.InmuebleDto;
+import com.jsebastian.eden.EdenSys.Dtos.InmuebleFiltroDto;
 import com.jsebastian.eden.EdenSys.Dtos.InmueblePatchDto;
 import com.jsebastian.eden.EdenSys.Dtos.InmuebleResponse;
 import com.jsebastian.eden.EdenSys.domain.Inmueble;
 import com.jsebastian.eden.EdenSys.domain.User;
 import com.jsebastian.eden.EdenSys.exceptions.ValueConflictException;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -34,4 +36,7 @@ public interface InmuebleService {
     List<InmuebleResponse> obtenerListaDeInmuebles();
 
     InmuebleResponse crearInmueble(@Valid InmuebleDto inmuebleDto, List<MultipartFile> imagenes, List<MultipartFile> documentosImportantes,String correoUsuario) ;
+
+    Page<InmuebleResponse> buscarConFiltros(InmuebleFiltroDto filtro);
+
 }
