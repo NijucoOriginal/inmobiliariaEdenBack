@@ -27,6 +27,7 @@ import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.mail.javamail.MimeMessageHelper;
 
+import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -628,5 +629,4 @@ public class UserServiceImpl implements UserService {
     public String generarToken(User usuario) {
         return jwtService.generateToken(usuario);
     }
-    
 }

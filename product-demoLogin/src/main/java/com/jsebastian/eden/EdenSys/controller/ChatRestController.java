@@ -1,5 +1,6 @@
 package com.jsebastian.eden.EdenSys.controller;
 
+import com.jsebastian.eden.EdenSys.Dtos.MensajeDTO;
 import com.jsebastian.eden.EdenSys.domain.Mensaje;
 import com.jsebastian.eden.EdenSys.services.interfaces.MensajeService;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +20,7 @@ public class ChatRestController {
     private final MensajeService chatService;
 
     @GetMapping("/{user}")
-    public List<Mensaje> getChat(@PathVariable String user, Principal principal) {
+    public List<MensajeDTO> getChat(@PathVariable String user, Principal principal) {
         return chatService.getChat(principal.getName(), user);
     }
 }

@@ -34,44 +34,4 @@ public class ContactoController {
         return ResponseEntity.ok(contactos);
     }
 
-    // --- NUEVO: Agregar un contacto ---
-    public void agregarContacto(String emailUsuarioLogueado, String emailContacto) {
-        if (emailUsuarioLogueado.equalsIgnoreCase(emailContacto)) {
-            throw new IllegalArgumentException("No puedes agregarte a ti mismo.");
-        }
-
-        User usuarioLogueado = userRepository.findByEmail(emailUsuarioLogueado)
-                .orElseThrow(() -> new RuntimeException("Usuario logueado no encontrado"));
-
-        User nuevoContacto = userRepository.findByEmail(emailContacto)
-                .orElseThrow(() -> new RuntimeException("El usuario que intentas agregar no existe"));
-
-        // Verificamos que no esté ya en la lista
-        if (usuarioLogueado.getContactos().contains(nuevoContacto)) {
-            throw new IllegalArgumentException("Este usuario ya está en tu lista de contactos.");
-        }
-
-        usuarioLogueado.getContactos().add(nuevoContacto);
-        userRepository.save(usuarioLogueado); // Hibernate inserta en user_contacts
-    }
-
-    // --- NUEVO: Eliminar un contacto ---
-    public void eliminarContacto(String emailUsuarioLogueado, String emailContacto) {
-        User usuarioLogueado = userRepository.findByEmail(emailUsuarioLogueado)
-                .orElseThrow(() -> new RuntimeException("Usuario logueado no encontrado"));
-
-        User contactoAEliminar = userRepository.findByEmail(emailContacto)
-                .orElseThrow(() -> new RuntimeException("El usuario que intentas eliminar no existe"));
-
-        // Removemos de la lista (el método equals() y hashCode() de tu entidad es vital aquí)
-        boolean removido = usuarioLogueado.getContactos().remove(contactoAEliminar);
-
-        if (!removido) {
-            throw new IllegalArgumentException("El usuario no pertenece a tu lista de contactos.");
-        }
-
-        userRepository.save(usuarioLogueado); // Hibernate borra de user_contacts
-    }
-
-
 }
