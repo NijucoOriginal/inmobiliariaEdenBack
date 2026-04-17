@@ -1,8 +1,7 @@
 package com.jsebastian.eden.EdenSys.controller;
 
 import com.jsebastian.eden.EdenSys.Dtos.ContactoChatDTO;
-import com.jsebastian.eden.EdenSys.domain.User;
-import com.jsebastian.eden.EdenSys.repository.UserRepository;
+import com.jsebastian.eden.EdenSys.services.interfaces.ContactoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,23 +14,21 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ContactoController {
 
-    private final UserRepository userRepository;
+    private final ContactoService contactoService;
 
     @GetMapping
-    public ResponseEntity<List<ContactoChatDTO>> getContactos(Principal principal) {
-        User user = userRepository.findByEmail(principal.getName())
-                .orElseThrow();
-
-        List<ContactoChatDTO> contactos = user.getContactos().stream()
-                .map(c -> new ContactoChatDTO(
-                        c.getId(),
-                        c.getNombre(),
-                        c.getApellido(),
-                        c.getEmail()
-                ))
-                .toList();
-
-        return ResponseEntity.ok(contactos);
+    public ResponseEntity<List<ContactoChatDTO>>getContactos(Principal principal) {
+        return ResponseEntity.ok(contactoService.getContactos(principal.getName()));
     }
 
+    @PostMapping("/{email}")
+    public ResponseEntity<ContactoChatDTO> agregar(@PathVariable String email, Principal principal) {
+        return ResponseEntity.ok(contactoService.agregarContacto(principal.getName(), email));
+    }
+
+    @DeleteMapping("/{email}")
+    public ResponseEntity<Void> eliminar(@PathVariable String email, Principal principal) {
+        contactoService.eliminarContacto(principal.getName(), email);
+        return ResponseEntity.noContent().build();
+    }
 }
