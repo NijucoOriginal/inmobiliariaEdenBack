@@ -75,6 +75,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/recuperar/cambiar").permitAll()
                         .requestMatchers("/api/usuarios/**").hasAnyAuthority("CLIENTE", "AGENTE")
                         .requestMatchers("/api/inmuebles/**").permitAll()
+                        .requestMatchers("/ws-chat/**").permitAll()
+                        .requestMatchers("/api/chat/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
