@@ -21,6 +21,14 @@ public class ChatbotController {
 
     private final InmuebleRepository inmuebleRepository;
 
+    private String limpiar(String valor) {
+        if (valor == null) return null;
+        String v = valor.trim();
+        if (v.isBlank() || v.equals("=") || v.equals("null")
+                || v.equals("undefined") || v.equalsIgnoreCase("empty")) return null; // ← agrega esto
+        return v;
+    }
+
     @GetMapping("/buscar")
     public ResponseEntity<?> buscar(
             @RequestParam(required = false) String ciudad,
@@ -33,18 +41,23 @@ public class ChatbotController {
             @RequestParam(required = false) Integer banosMin,
             @RequestParam(required = false) Integer parqueaderosMin
     ) {
+        ciudad       = limpiar(ciudad);
+        departamento = limpiar(departamento);
+        tipo         = limpiar(tipo);
+        tipoNegocio  = limpiar(tipoNegocio);
+
         InmuebleFiltroDto filtro = new InmuebleFiltroDto();
         filtro.setCiudad(ciudad);
         filtro.setDepartamento(departamento);
 
         try {
-            filtro.setTipo(tipo != null && !tipo.isBlank() ? TipoInmueble.valueOf(tipo.trim().toUpperCase()) : null);
+            filtro.setTipo(tipo != null ? TipoInmueble.valueOf(tipo.toUpperCase()) : null);
         } catch (IllegalArgumentException e) {
             filtro.setTipo(null);
         }
 
         try {
-            filtro.setTipoNegocio(tipoNegocio != null && !tipoNegocio.isBlank() ? TipoNegocio.valueOf(tipoNegocio.trim().toUpperCase()) : null);
+            filtro.setTipoNegocio(tipoNegocio != null ? TipoNegocio.valueOf(tipoNegocio.toUpperCase()) : null);
         } catch (IllegalArgumentException e) {
             filtro.setTipoNegocio(null);
         }
@@ -55,24 +68,24 @@ public class ChatbotController {
         filtro.setBanosMin(banosMin);
         filtro.setParqueaderosMin(parqueaderosMin);
 
-        var spec = InmuebleSpecification.conFiltros(filtro);
-        var resultados = inmuebleRepository.findAll(spec);
+        var spec  = InmuebleSpecification.conFiltros(filtro);
+        long total = inmuebleRepository.count(spec);
 
         Map<String, Object> filtrosAplicados = new HashMap<>();
-        if (ciudad != null && !ciudad.isBlank())           filtrosAplicados.put("ciudad", ciudad);
-        if (departamento != null && !departamento.isBlank()) filtrosAplicados.put("departamento", departamento);
-        if (filtro.getTipo() != null)                      filtrosAplicados.put("tipo", filtro.getTipo().name());
-        if (filtro.getTipoNegocio() != null)               filtrosAplicados.put("tipoNegocio", filtro.getTipoNegocio().name());
-        if (precioMin != null)                             filtrosAplicados.put("precioMin", precioMin);
-        if (precioMax != null)                             filtrosAplicados.put("precioMax", precioMax);
-        if (habitacionesMin != null)                       filtrosAplicados.put("habitacionesMin", habitacionesMin);
-        if (banosMin != null)                              filtrosAplicados.put("banosMin", banosMin);
+        if (ciudad       != null) filtrosAplicados.put("ciudad",         ciudad);
+        if (departamento != null) filtrosAplicados.put("departamento",   departamento);
+        if (filtro.getTipo()        != null) filtrosAplicados.put("tipo",        filtro.getTipo().name());
+        if (filtro.getTipoNegocio() != null) filtrosAplicados.put("tipoNegocio", filtro.getTipoNegocio().name());
+        if (precioMin       != null) filtrosAplicados.put("precioMin",       precioMin);
+        if (precioMax       != null) filtrosAplicados.put("precioMax",       precioMax);
+        if (habitacionesMin != null) filtrosAplicados.put("habitacionesMin", habitacionesMin);
+        if (banosMin        != null) filtrosAplicados.put("banosMin",        banosMin);
 
         Map<String, Object> response = new HashMap<>();
-        response.put("mensaje", "Se encontraron " + resultados.size() + " inmuebles");
-        response.put("totalResultados", resultados.size());
+        response.put("mensaje",          "Se encontraron " + total + " inmuebles");
+        response.put("totalResultados",  total);
         response.put("filtrosAplicados", filtrosAplicados);
-        response.put("accion", "VER_CATALOGO");
+        response.put("accion",           "VER_CATALOGO");
 
         return ResponseEntity.ok(response);
     }
@@ -80,17 +93,19 @@ public class ChatbotController {
     @GetMapping("/destacados")
     public ResponseEntity<?> destacados() {
         InmuebleFiltroDto filtro = new InmuebleFiltroDto();
-        var spec = InmuebleSpecification.conFiltros(filtro);
-        var resultados = inmuebleRepository.findAll(spec);
+        var spec  = InmuebleSpecification.conFiltros(filtro);
+        long total = inmuebleRepository.count(spec);
 
         Map<String, Object> response = new HashMap<>();
-        response.put("mensaje", "Se encontraron " + resultados.size() + " inmuebles disponibles");
-        response.put("totalResultados", resultados.size());
+        response.put("mensaje",          "Se encontraron " + total + " inmuebles disponibles");
+        response.put("totalResultados",  total);
         response.put("filtrosAplicados", new HashMap<>());
-        response.put("accion", "VER_CATALOGO");
+        response.put("accion",           "VER_CATALOGO");
 
         return ResponseEntity.ok(response);
     }
+
+
 
     @GetMapping("/inmueble/{id}")
     public ResponseEntity<?> detalle(@PathVariable Long id) {
