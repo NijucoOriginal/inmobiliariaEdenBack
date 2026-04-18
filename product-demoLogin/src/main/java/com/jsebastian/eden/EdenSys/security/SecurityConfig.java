@@ -57,7 +57,7 @@ public class SecurityConfig {
         http
                 .cors(cors -> cors.configurationSource(request -> {
                     var corsConfig = new org.springframework.web.cors.CorsConfiguration();
-                    corsConfig.setAllowedOrigins(List.of("http://localhost:4200","http://localhost:5678","http://n8n:5678",""));
+                    corsConfig.setAllowedOrigins(List.of("http://localhost:4200","http://localhost:5678","http://n8n:5678","http://localhost:4201"));
                     corsConfig.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
                     corsConfig.setAllowedHeaders(List.of("Authorization", "Content-Type"));
                     corsConfig.setAllowCredentials(true);
@@ -76,6 +76,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/usuarios/**").hasAnyAuthority("CLIENTE", "AGENTE")
                         .requestMatchers("/api/inmuebles/**").permitAll()
                         .requestMatchers("/api/chatbot/**").permitAll()
+                        .requestMatchers("/ws-chat/**").permitAll()
+                        .requestMatchers("/api/chat/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
