@@ -80,6 +80,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // 4️⃣ Continuar con el siguiente filtro
         filterChain.doFilter(request, response);
     }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        String path = request.getRequestURI();
+        return path.startsWith("/ws-chat");
+    }
 }
 
 

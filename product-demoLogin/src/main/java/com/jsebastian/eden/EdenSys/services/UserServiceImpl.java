@@ -2,9 +2,12 @@ package com.jsebastian.eden.EdenSys.services;
 
 import ch.qos.logback.classic.Logger;
 import com.jsebastian.eden.EdenSys.Dtos.*;
+import com.jsebastian.eden.EdenSys.domain.Conversacion;
+import com.jsebastian.eden.EdenSys.domain.Mensaje;
 import com.jsebastian.eden.EdenSys.domain.Rol;
 import com.jsebastian.eden.EdenSys.domain.User;
-import com.jsebastian.eden.EdenSys.repository.LogsRepository;
+import com.jsebastian.eden.EdenSys.repository.ConversacionRepository;
+import com.jsebastian.eden.EdenSys.repository.MensajeRepository;
 import com.jsebastian.eden.EdenSys.repository.UserRepository;
 import com.jsebastian.eden.EdenSys.mappers.UserMapper;
 import com.jsebastian.eden.EdenSys.exceptions.ValueConflictException;
@@ -57,6 +60,12 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private CaptchaService captchaService;
+
+    @Autowired
+    private ConversacionRepository conversacionRepository;
+
+    @Autowired
+    private MensajeRepository mensajeRepository;
 
     private static final Logger logger = (Logger) LoggerFactory.getLogger(UserServiceImpl.class);
 
@@ -448,6 +457,7 @@ public class UserServiceImpl implements UserService {
      * @param codigo el código de activación
      * @return true si la activación fue exitosa, false en caso contrario
      */
+    // ─── 3. Método activarUsuario completo modificado ─────────────────────────
     @Override
     public boolean activarUsuario(String codigo) {
         Optional<User> usuarioOptional = userRepository.findByCodigoActivacion(codigo);
@@ -455,8 +465,8 @@ public class UserServiceImpl implements UserService {
         if (usuarioOptional.isPresent()) {
             User usuario = usuarioOptional.get();
 
-            if (usuario.getFechaCreacionCodigo().isBefore(LocalDateTime.now().minusMinutes(10))) { //10 minutos
-                logsService.registrarLog("El codigo del usuario ha expirado correctamente",usuario.getId());
+            if (usuario.getFechaCreacionCodigo().isBefore(LocalDateTime.now().minusMinutes(10))) {
+                logsService.registrarLog("El codigo del usuario ha expirado correctamente", usuario.getId());
                 logger.warn("Código expirado para usuario {}", usuario.getEmail());
                 usuario.setRol(Rol.PENDIENTE);
                 usuario.setCodigoActivacion(null);
@@ -465,18 +475,19 @@ public class UserServiceImpl implements UserService {
                 return false;
             }
 
-
-            // Verificar si el usuario ya está activado
             if (usuario.getRol() != Rol.PENDIENTE) {
                 logger.warn("El usuario con email {} ya está activado.", usuario.getEmail());
                 return false;
             }
 
-            // Actualizar el rol del usuario a CLIENTE
+            // Activar el usuario
             usuario.setRol(Rol.CLIENTE);
-            logsService.registrarLog("El usuario ha pasado a ser un cliente de la aplicación",usuario.getId());
-            usuario.setCodigoActivacion(null); // Eliminar el código de activación
+            logsService.registrarLog("El usuario ha pasado a ser un cliente de la aplicación", usuario.getId());
+            usuario.setCodigoActivacion(null);
             userRepository.save(usuario);
+
+            // Crear conversación de bienvenida con un admin aleatorio
+            crearConversacionBienvenida(usuario);
 
             logger.info("Usuario con email {} activado exitosamente.", usuario.getEmail());
             return true;
@@ -485,6 +496,7 @@ public class UserServiceImpl implements UserService {
             return false;
         }
     }
+
 
     /**
      * Valida las credenciales del usuario y genera un token JWT
@@ -628,5 +640,75 @@ public class UserServiceImpl implements UserService {
     public String generarToken(User usuario) {
         return jwtService.generateToken(usuario);
     }
-    
+
+    @Override
+    public void cambiarRolUsuario(Long usuarioId, String nuevoRol) {
+        User usuario = userRepository.findById(usuarioId)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado: " + usuarioId));
+
+        try {
+            Rol rol = Rol.valueOf(nuevoRol);
+            usuario.setRol(rol);
+            userRepository.save(usuario);
+            logsService.registrarLog("Rol del usuario cambiado a " + nuevoRol, usuarioId);
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Rol inválido: " + nuevoRol);
+        }
+    }
+
+    // ─── 4. Método privado crearConversacionBienvenida ────────────────────────
+    private void crearConversacionBienvenida(User nuevoUsuario) {
+        try {
+            // Buscar todos los admins
+            List<User> admins = userRepository.findByRol(Rol.ADMIN);
+
+            if (admins.isEmpty()) {
+                logger.warn("No hay administradores disponibles para crear conversación de bienvenida.");
+                return;
+            }
+
+            // Escoger un admin al azar
+            java.util.Random random = new java.util.Random();
+            User adminAleatorio = admins.get(random.nextInt(admins.size()));
+
+            // Crear la conversación
+            Conversacion conversacion = Conversacion.builder()
+                    .usuario1(adminAleatorio)
+                    .usuario2(nuevoUsuario)
+                    .creadaEn(LocalDateTime.now())
+                    .ultimoMensajeEn(LocalDateTime.now())
+                    .build();
+
+            conversacion = conversacionRepository.save(conversacion);
+
+            // Crear mensaje de bienvenida
+            String textoMensaje = "¡Bienvenido/a a Edén Inmobiliaria, " + nuevoUsuario.getNombre() + "! 🏡\n\n" +
+                    "Estamos muy contentos de tenerte con nosotros. Soy " +
+                    adminAleatorio.getNombre() + " " + adminAleatorio.getApellido() +
+                    ", parte del equipo de administración.\n\n" +
+                    "Estamos aquí para ayudarte en todo lo que necesites. " +
+                    "No dudes en escribirnos si tienes alguna pregunta sobre nuestras propiedades o servicios.";
+
+            Mensaje mensaje = Mensaje.builder()
+                    .conversacion(conversacion)
+                    .emisor(adminAleatorio)
+                    .receptor(nuevoUsuario)
+                    .contenido(textoMensaje)
+                    .enviadoEn(LocalDateTime.now())
+                    .leido(false)
+                    .build();
+
+            mensajeRepository.save(mensaje);
+
+            logger.info("Conversación de bienvenida creada entre admin {} y nuevo usuario {}",
+                    adminAleatorio.getEmail(), nuevoUsuario.getEmail());
+
+        } catch (Exception e) {
+            // No interrumpir la activación si falla la conversación
+            logger.error("Error al crear conversación de bienvenida para {}: {}",
+                    nuevoUsuario.getEmail(), e.getMessage());
+        }
+    }
+
+
 }

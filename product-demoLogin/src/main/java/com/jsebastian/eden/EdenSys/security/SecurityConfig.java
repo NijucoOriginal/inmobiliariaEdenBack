@@ -26,7 +26,7 @@ public class SecurityConfig {
 
     private final UserRepository userRepository;
     private final CorsFilter corsFilter;
-    private final UrlBasedCorsConfigurationSource corsConfigurationSource; // ← inyecta el source
+    private final UrlBasedCorsConfigurationSource corsConfigurationSource;
 
     @Bean
     public UserDetailsService userDetailsService() {
@@ -58,16 +58,22 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http,
                                            JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource)) // ← limpio y directo
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/", "/health", "/actuator/**").permitAll()
                         .requestMatchers("/api/usuarios").permitAll()
+                        .requestMatchers("/api/usuarios/todos").hasAuthority("ADMIN")
+                        .requestMatchers("/api/usuarios/cambiar-rol").hasAuthority("ADMIN")
+                        .requestMatchers("/api/usuarios/**").hasAnyAuthority("CLIENTE", "AGENTE")
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/inmuebles/**").permitAll()
-                        .requestMatchers("/api/usuarios/**").hasAnyAuthority("CLIENTE", "AGENTE")
+                        .requestMatchers("/api/chatbot/**").permitAll()
+                        .requestMatchers("/ws-chat/**").permitAll()
+                        .requestMatchers("/ws-chat").permitAll()
+                        .requestMatchers("/api/chat/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(corsFilter, UsernamePasswordAuthenticationFilter.class)
@@ -75,4 +81,3 @@ public class SecurityConfig {
 
         return http.build();
     }
-}
