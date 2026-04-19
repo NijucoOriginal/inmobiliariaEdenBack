@@ -26,6 +26,17 @@ public class ChatRestController {
     @GetMapping("/conversaciones")
     public ResponseEntity<List<ConversacionDto>> listarConversaciones(
             @AuthenticationPrincipal UserDetails userDetails) {
+
+        // ← Agrega esto temporalmente
+        System.out.println("=== CHAT DEBUG ===");
+        System.out.println("UserDetails: " + userDetails);
+        System.out.println("Username: " + (userDetails != null ? userDetails.getUsername() : "NULL"));
+
+        if (userDetails == null) {
+            System.out.println("ERROR: userDetails es null - JWT no verificado");
+            return ResponseEntity.status(500).build();
+        }
+
         return ResponseEntity.ok(
                 chatService.listarConversaciones(userDetails.getUsername())
         );

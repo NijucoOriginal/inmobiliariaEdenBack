@@ -40,7 +40,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
 
         registry.addEndpoint("/ws-chat")
-                .setAllowedOriginPatterns("http://localhost:4200", "http://localhost:4201");
+                .setAllowedOriginPatterns("*");
+
     }
 
     // ─── Interceptor: autentica el WebSocket con el JWT ──────────────────

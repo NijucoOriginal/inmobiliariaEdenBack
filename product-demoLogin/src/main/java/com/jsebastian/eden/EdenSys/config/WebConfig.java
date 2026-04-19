@@ -30,11 +30,13 @@ public class WebConfig {
         List<String> origins = new ArrayList<>();
         origins.add(frontendUrl);
         origins.add(frontendLocalUrl);
+        origins.add("http://localhost:5678");
+        origins.add("http://localhost:8080");
         if (cloudfrontUrl != null && !cloudfrontUrl.isBlank()) {
             origins.add(cloudfrontUrl);
         }
 
-        System.out.println(">>> CORS orígenes permitidos: " + origins); // para verificar en logs
+        System.out.println(">>> CORS orígenes permitidos: " + origins);
 
         config.setAllowedOrigins(origins);
         config.setAllowedHeaders(List.of("*"));
