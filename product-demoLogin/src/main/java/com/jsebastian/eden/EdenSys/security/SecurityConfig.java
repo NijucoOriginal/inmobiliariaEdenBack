@@ -16,21 +16,24 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-
-import java.util.List;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CorsFilter;
 
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final UserRepository userRepository; // inyectar repo para crear UserDetailsService
+    private final UserRepository userRepository;
+    private final CorsFilter corsFilter;
+    private final UrlBasedCorsConfigurationSource corsConfigurationSource;
 
     @Bean
     public UserDetailsService userDetailsService() {
         return username -> userRepository.findByEmail(username)
-                .map(user -> new CustomUserDetails(user))
-                .orElseThrow(() -> new org.springframework.security.core.userdetails.UsernameNotFoundException("Usuario no encontrado: " + username));
+                .map(CustomUserDetails::new)
+                .orElseThrow(() -> new org.springframework.security.core.userdetails.UsernameNotFoundException(
+                        "Usuario no encontrado: " + username));
     }
 
     @Bean
@@ -51,39 +54,32 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    // Nota: recibimos JwtAuthenticationFilter como parámetro del método bean (NO en el constructor)
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http,
+                                           JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
         http
-                .cors(cors -> cors.configurationSource(request -> {
-                    var corsConfig = new org.springframework.web.cors.CorsConfiguration();
-                    corsConfig.setAllowedOrigins(List.of("http://localhost:4200","http://localhost:4201"));
-                    corsConfig.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-                    corsConfig.setAllowedHeaders(List.of("Authorization", "Content-Type"));
-                    corsConfig.setAllowCredentials(true);
-                    return corsConfig;
-                }))
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authz -> authz
-                        .requestMatchers("/actuator/**").permitAll()
-                        .requestMatchers("/api/auth/activate/**").permitAll()
-                        .requestMatchers("/api/auth/login").permitAll()
-                        .requestMatchers("/api/auth/contacto").permitAll()
-                        .requestMatchers("/api/auth/recuperar").permitAll()
-                        .requestMatchers("/api/auth/recuperar/cambiar").permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/", "/health", "/actuator/**").permitAll()
                         .requestMatchers("/api/usuarios").permitAll()
                         .requestMatchers("/api/usuarios/todos").hasAuthority("ADMIN")
                         .requestMatchers("/api/usuarios/cambiar-rol").hasAuthority("ADMIN")
                         .requestMatchers("/api/usuarios/**").hasAnyAuthority("CLIENTE", "AGENTE")
+                        .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/inmuebles/**").permitAll()
+                        .requestMatchers("/api/chatbot/**").permitAll()
                         .requestMatchers("/ws-chat/**").permitAll()
+                        .requestMatchers("/ws-chat").permitAll()
                         .requestMatchers("/api/chat/**").authenticated()
+
                         .anyRequest().authenticated()
                 )
+                .addFilterBefore(corsFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
-        return http.build();
-    }
-
+        return http.build();}
 }
+

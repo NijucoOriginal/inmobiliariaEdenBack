@@ -39,8 +39,6 @@ services:
     networks:
       - monitoring-network
 
-
-
   # Grafana: El panel visual
   grafana:
     image: grafana/grafana:latest
@@ -48,7 +46,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD}
     networks:
       - monitoring-network
     depends_on:
