@@ -63,7 +63,7 @@ services:
       - N8N_PORT=5678
       - N8N_PROTOCOL=http
       # URL que usará n8n para generar los webhooks
-      - WEBHOOK_URL=http://localhost:5678/
+      - WEBHOOK_URL=http://18.206.92.54:5678/
       # Tu API key de OpenAI o Gemini (la que uses en el AI Agent)
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       # Seguridad básica (opcional pero recomendado)
