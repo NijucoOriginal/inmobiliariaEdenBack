@@ -26,7 +26,7 @@ public class SecurityConfig {
 
     private final UserRepository userRepository;
     private final CorsFilter corsFilter;
-    private final UrlBasedCorsConfigurationSource corsConfigurationSource; // ← inyecta el source
+    private final UrlBasedCorsConfigurationSource corsConfigurationSource;
 
     @Bean
     public UserDetailsService userDetailsService() {
@@ -57,16 +57,8 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http,
                                            JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
-                .cors(cors -> cors.configurationSource(corsConfigurationSource)) // ← limpio y directo
-                .cors(cors -> cors.configurationSource(request -> {
-                    var corsConfig = new org.springframework.web.cors.CorsConfiguration();
-                    corsConfig.setAllowedOrigins(List.of("http://localhost:4200","http://localhost:5678","http://n8n:5678","http://localhost:4201"));
-                    corsConfig.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-                    corsConfig.setAllowedHeaders(List.of("Authorization", "Content-Type"));
-                    corsConfig.setAllowCredentials(true);
-                    return corsConfig;
-                }))
-
+        http
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authz -> authz
@@ -75,10 +67,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/usuarios").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/inmuebles/**").permitAll()
-                        .requestMatchers("/api/usuarios/**").hasAnyAuthority("CLIENTE", "AGENTE")
                         .requestMatchers("/api/chatbot/**").permitAll()
                         .requestMatchers("/ws-chat/**").permitAll()
                         .requestMatchers("/api/chat/**").authenticated()
+                        .requestMatchers("/api/usuarios/**").hasAnyAuthority("CLIENTE", "AGENTE")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(corsFilter, UsernamePasswordAuthenticationFilter.class)
