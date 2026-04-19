@@ -1,13 +1,10 @@
 package com.jsebastian.eden.EdenSys.controller;
 
-import com.jsebastian.eden.EdenSys.Dtos.AuthResponse;
-import com.jsebastian.eden.EdenSys.Dtos.UserResponse;
-import com.jsebastian.eden.EdenSys.Dtos.UsuarioResponse;
+import com.jsebastian.eden.EdenSys.Dtos.*;
 import com.jsebastian.eden.EdenSys.domain.User;
 import com.jsebastian.eden.EdenSys.repository.UserRepository;
 import com.jsebastian.eden.EdenSys.services.interfaces.CaptchaService;
 import com.jsebastian.eden.EdenSys.services.interfaces.UserService;
-import com.jsebastian.eden.EdenSys.Dtos.CrearUsuarioDto;
 import com.jsebastian.eden.EdenSys.exceptions.ValueConflictException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -218,6 +215,38 @@ public class UserController {
     public ResponseEntity<String> desvincularUsuario(@PathVariable String email) {
         userService.desvincularUsuario(email);
         return ResponseEntity.ok("Usuario desvinculado correctamente");
+    }
+
+    // ─── 3. Agregar estos dos métodos en UserController o crear uno nuevo ──────
+// En tu UserController existente agrega:
+
+    @GetMapping("/todos")
+    public ResponseEntity<List<UsuarioAdminDto>> obtenerTodos(
+            @RequestHeader("Authorization") String authHeader) {
+
+        List<UsuarioAdminDto> usuarios = userService.obtenerTodosLosUsuarios()
+                .stream()
+                .map(u -> new UsuarioAdminDto(
+                        u.getId(),
+                        u.getNombre(),
+                        u.getApellido(),
+                        u.getEmail(),
+                        u.getDocumentoIdentidad(),
+                        u.getTelefono(),
+                        u.getRol().name()
+                ))
+                .toList();
+
+        return ResponseEntity.ok(usuarios);
+    }
+
+    @PutMapping("/cambiar-rol")
+    public ResponseEntity<String> cambiarRol(
+            @RequestBody CambiarRolDto dto,
+            @RequestHeader("Authorization") String authHeader) {
+
+        userService.cambiarRolUsuario(dto.usuarioId(), dto.nuevoRol());
+        return ResponseEntity.ok("Rol actualizado correctamente");
     }
 
 

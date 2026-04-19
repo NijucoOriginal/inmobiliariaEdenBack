@@ -129,4 +129,6 @@ public interface UserService {
     void enviarCorreo(String mail, String asunto, String mensaje);
 
     void procesarContacto(@Valid ContactoDto contacto);
+
+    void cambiarRolUsuario(Long usuarioId, String nuevoRol);
 }

@@ -55,4 +55,5 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     List<User> findByRolNotIn(List<Rol> rols);
 
+
 }
