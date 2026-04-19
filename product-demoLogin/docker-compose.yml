@@ -21,6 +21,10 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - RECAPTCHA_SECRET=${RECAPTCHA_SECRET}
       - PROMETHEUS_URL=${PROMETHEUS_URL}
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway" # Permite a Docker ver tu Postgres local
+
     networks:
       - monitoring-network
 
@@ -35,6 +39,58 @@ services:
     networks:
       - monitoring-network
 
+
+
+  # Grafana: El panel visual
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    networks:
+      - monitoring-network
+    depends_on:
+      - prometheus
+
+    # N8N: El orquestador del chatbot IA
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      # URL que usará n8n para generar los webhooks
+      - WEBHOOK_URL=http://localhost:5678/
+      # Tu API key de OpenAI o Gemini (la que uses en el AI Agent)
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      # Seguridad básica (opcional pero recomendado)
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=${N8N_USER:-admin}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_PASSWORD:-admin123}
+      - N8N_RUNNERS_ENABLED=true
+      - GENERIC_TIMEZONE=America/Bogota
+      - N8N_CORS_ENABLE=true
+      - N8N_CORS_ALLOWED_ORIGINS=*
+    volumes:
+      # Persiste tus flujos para que no se pierdan al reiniciar
+      - n8n_data:/home/node/.n8n
+    extra_hosts:
+      # Para que n8n pueda llamar a app-backend por nombre de servicio
+      - "host.docker.internal:host-gateway"
+    networks:
+      - monitoring-network
+    depends_on:
+      - app-backend
+
+
 networks:
   monitoring-network:
     driver: bridge
+
+volumes:
+  n8n_data:

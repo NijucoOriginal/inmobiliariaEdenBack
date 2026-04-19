@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,10 +45,24 @@ public class WebConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;
-    }
 
-    @Bean
-    public CorsFilter corsFilter(UrlBasedCorsConfigurationSource corsConfigurationSource) {
-        return new CorsFilter(corsConfigurationSource);
+        public WebMvcConfigurer corsConfigurer () {
+            return new WebMvcConfigurer() {
+                @Override
+                public void addCorsMappings(CorsRegistry registry) {
+                    registry.addMapping("/api/**")
+                            .allowedOrigins(frontendUrl, frontendLocalUrl, "http://localhost:5678", "http://localhost:8080")
+                            .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                            .allowCredentials(true);
+                }
+            };
+        }
+
+
+
+        @Bean
+        public CorsFilter corsFilter (UrlBasedCorsConfigurationSource corsConfigurationSource){
+            return new CorsFilter(corsConfigurationSource);
+        }
     }
 }
