@@ -69,6 +69,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/inmuebles/**").permitAll()
                         .requestMatchers("/api/chatbot/**").permitAll()
                         .requestMatchers("/ws-chat/**").permitAll()
+                        .requestMatchers("/ws-chat").permitAll()
                         .requestMatchers("/api/chat/**").authenticated()
                         .requestMatchers("/api/usuarios/**").hasAnyAuthority("CLIENTE", "AGENTE")
                         .anyRequest().authenticated()
