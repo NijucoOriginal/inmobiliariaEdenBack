@@ -1,8 +1,7 @@
-// ─── ChatRestController.java ───────────────────────────────────────────────
-// Endpoints REST para carga inicial de datos
 package com.jsebastian.eden.EdenSys.controller;
 
 import com.jsebastian.eden.EdenSys.Dtos.chat.*;
+import com.jsebastian.eden.EdenSys.services.ChatMetricasService; // ← NUEVO
 import com.jsebastian.eden.EdenSys.services.ChatService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -10,6 +9,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.util.List;
 
 @RestController
@@ -18,72 +18,67 @@ import java.util.List;
 public class ChatRestController {
 
     private final ChatService chatService;
+    private final ChatMetricasService chatMetricasService; // ← NUEVO
 
-    /**
-     * GET /api/chat/conversaciones
-     * Devuelve todas las conversaciones del usuario logueado (lista lateral)
-     */
     @GetMapping("/conversaciones")
     public ResponseEntity<List<ConversacionDto>> listarConversaciones(
             @AuthenticationPrincipal UserDetails userDetails) {
-
-        // ← Agrega esto temporalmente
-        System.out.println("=== CHAT DEBUG ===");
-        System.out.println("UserDetails: " + userDetails);
-        System.out.println("Username: " + (userDetails != null ? userDetails.getUsername() : "NULL"));
-
-        if (userDetails == null) {
-            System.out.println("ERROR: userDetails es null - JWT no verificado");
+        try {
+            if (userDetails == null) return ResponseEntity.status(500).build();
+            return ResponseEntity.ok(
+                    chatService.listarConversaciones(userDetails.getUsername())
+            );
+        } catch (Exception e) {
+            chatMetricasService.contarError(); // ← NUEVO
             return ResponseEntity.status(500).build();
         }
-
-        return ResponseEntity.ok(
-                chatService.listarConversaciones(userDetails.getUsername())
-        );
     }
 
-    /**
-     * POST /api/chat/conversaciones/iniciar
-     * Abre o crea una conversación con otro usuario.
-     * Llamado desde el botón "Contactar" del detalle-inmueble.
-     */
     @PostMapping("/conversaciones/iniciar")
     public ResponseEntity<ConversacionDetalleDto> iniciarConversacion(
             @RequestBody IniciarConversacionRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
-        ConversacionDetalleDto detalle = chatService.obtenerOCrearConversacion(
-                userDetails.getUsername(),
-                request.otroUsuarioId()
-        );
-        return ResponseEntity.ok(detalle);
+        Instant inicio = Instant.now(); // ← agregar
+        try {
+            ConversacionDetalleDto detalle = chatService.obtenerOCrearConversacion(
+                    userDetails.getUsername(),
+                    request.otroUsuarioId()
+            );
+            chatMetricasService.registrarLatenciaMensaje(inicio, Instant.now()); // ← agregar
+            return ResponseEntity.ok(detalle);
+        } catch (Exception e) {
+            chatMetricasService.contarError();
+            return ResponseEntity.status(500).build();
+        }
     }
 
-    /**
-     * GET /api/chat/conversaciones/{id}
-     * Carga el historial completo de una conversación existente
-     */
     @GetMapping("/conversaciones/{id}")
     public ResponseEntity<ConversacionDetalleDto> obtenerConversacion(
             @PathVariable Long id,
             @AuthenticationPrincipal UserDetails userDetails) {
-        // Reutilizamos el mismo método: si la conversación existe la carga,
-        // el otroUsuarioId lo inferimos desde la conversación
-        ConversacionDetalleDto detalle = chatService.obtenerConversacionPorId(
-                userDetails.getUsername(), id
-        );
-        return ResponseEntity.ok(detalle);
+        Instant inicio = Instant.now(); // ← agregar
+        try {
+            ConversacionDetalleDto detalle = chatService.obtenerConversacionPorId(
+                    userDetails.getUsername(), id
+            );
+            chatMetricasService.registrarLatenciaMensaje(inicio, Instant.now()); // ← agregar
+            return ResponseEntity.ok(detalle);
+        } catch (Exception e) {
+            chatMetricasService.contarError();
+            return ResponseEntity.status(500).build();
+        }
     }
 
-    /**
-     * PUT /api/chat/conversaciones/{id}/leidos
-     * Marca todos los mensajes de la conversación como leídos
-     */
     @PutMapping("/conversaciones/{id}/leidos")
     public ResponseEntity<Void> marcarLeidos(
             @PathVariable Long id,
             @AuthenticationPrincipal UserDetails userDetails) {
-        chatService.marcarLeidos(userDetails.getUsername(), id);
-        return ResponseEntity.ok().build();
+        try {
+            chatService.marcarLeidos(userDetails.getUsername(), id);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            chatMetricasService.contarError(); // ← NUEVO
+            return ResponseEntity.status(500).build();
+        }
     }
 }
- 

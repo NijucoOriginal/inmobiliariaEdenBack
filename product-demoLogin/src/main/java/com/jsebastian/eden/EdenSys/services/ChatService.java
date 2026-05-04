@@ -12,7 +12,9 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;        // ← NUEVO
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;     // ← NUEVO
 import java.util.List;
 
 @Service
@@ -23,14 +25,13 @@ public class ChatService {
     private final MensajeRepository mensajeRepository;
     private final UserRepository userRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final ChatMetricasService chatMetricasService; // ← NUEVO
 
-    // ─── Obtener o crear conversación entre dos usuarios ──────────────────
     @Transactional
     public ConversacionDetalleDto obtenerOCrearConversacion(String emailActual, Long otroUsuarioId) {
         User yo = obtenerUsuarioPorEmail(emailActual);
         User otro = obtenerUsuarioPorId(otroUsuarioId);
 
-        // Impedir que un usuario hable consigo mismo
         if (yo.getId().equals(otro.getId())) {
             throw new IllegalArgumentException("No puedes iniciar una conversación contigo mismo.");
         }
@@ -39,7 +40,6 @@ public class ChatService {
                 .findEntreUsuarios(yo, otro)
                 .orElseGet(() -> crearConversacion(yo, otro));
 
-        // Marcar mensajes dirigidos a mí como leídos
         mensajeRepository.marcarComoLeidos(conversacion.getId(), yo.getId());
 
         List<MensajeDto> mensajes = mensajeRepository
@@ -61,7 +61,6 @@ public class ChatService {
         );
     }
 
-    // ─── Lista de conversaciones del usuario actual ───────────────────────
     @Transactional(readOnly = true)
     public List<ConversacionDto> listarConversaciones(String emailActual) {
         User yo = obtenerUsuarioPorEmail(emailActual);
@@ -72,7 +71,6 @@ public class ChatService {
                     ? c.getUsuario2()
                     : c.getUsuario1();
 
-            // Último mensaje de la conversación
             List<Mensaje> msgs = mensajeRepository
                     .findByConversacionIdOrderByEnviadoEnAsc(c.getId());
 
@@ -80,7 +78,6 @@ public class ChatService {
                     ? ""
                     : msgs.get(msgs.size() - 1).getContenido();
 
-            // Contar mensajes no leídos dirigidos a mí en esta conversación
             long noLeidos = msgs.stream()
                     .filter(m -> m.getReceptor().getId().equals(yo.getId()) && !m.isLeido())
                     .count();
@@ -97,18 +94,15 @@ public class ChatService {
         }).toList();
     }
 
-    // ─── Enviar mensaje (llamado desde WebSocket controller) ─────────────
     @Transactional
     public MensajeDto enviarMensaje(String emailEmisor, EnviarMensajeRequest request) {
         User emisor = obtenerUsuarioPorEmail(emailEmisor);
         User receptor = obtenerUsuarioPorId(request.receptorId());
 
-        // Impedir auto-mensajes
         if (emisor.getId().equals(receptor.getId())) {
             throw new IllegalArgumentException("No puedes enviarte mensajes a ti mismo.");
         }
 
-        // Obtener o crear la conversación
         Conversacion conversacion;
         if (request.conversacionId() != null) {
             conversacion = conversacionRepository.findById(request.conversacionId())
@@ -119,7 +113,32 @@ public class ChatService {
                     .orElseGet(() -> crearConversacion(emisor, receptor));
         }
 
-        // Persistir el mensaje
+        // ── MÉTRICA: contar mensaje ──────────────────────────────────── NUEVO
+        chatMetricasService.contarMensaje();
+
+        // ── MÉTRICA: tiempo de respuesta del agente ────────────────────── NUEVO
+        // Si hay mensajes previos y el emisor actual NO fue quien mandó el primero,
+        // significa que es el agente respondiendo al cliente por primera vez
+        List<Mensaje> mensajesPrevios = mensajeRepository
+                .findByConversacionIdOrderByEnviadoEnAsc(conversacion.getId());
+
+        if (!mensajesPrevios.isEmpty()) {
+            Mensaje primerMensaje = mensajesPrevios.get(0);
+            System.out.println("=== METRICA DEBUG ===");
+            System.out.println("Primer emisor ID: " + primerMensaje.getEmisor().getId());
+            System.out.println("Emisor actual ID: " + emisor.getId());
+            System.out.println("Son diferentes: " + !primerMensaje.getEmisor().getId().equals(emisor.getId()));
+
+            if (!primerMensaje.getEmisor().getId().equals(emisor.getId())) {
+                chatMetricasService.registrarTiempoRespuesta(
+                        primerMensaje.getEnviadoEn().toInstant(ZoneOffset.UTC),
+                        Instant.now()
+                );
+                System.out.println("=== TIEMPO RESPUESTA REGISTRADO ===");
+            }
+        }
+        // ── FIN MÉTRICA ───────────────────────────────────────────────────
+
         Mensaje mensaje = Mensaje.builder()
                 .conversacion(conversacion)
                 .emisor(emisor)
@@ -130,21 +149,17 @@ public class ChatService {
 
         mensaje = mensajeRepository.save(mensaje);
 
-        // Actualizar timestamp de último mensaje en la conversación
         conversacion.setUltimoMensajeEn(LocalDateTime.now());
         conversacionRepository.save(conversacion);
 
         MensajeDto mensajeDto = toMensajeDto(mensaje);
 
-        // ─── Entrega en tiempo real por WebSocket ─────────────────────────
-        // Canal personal del receptor: /user/{receptorId}/queue/mensajes
         messagingTemplate.convertAndSendToUser(
                 receptor.getId().toString(),
                 "/queue/mensajes",
                 mensajeDto
         );
 
-        // Notificación (badge, preview)
         long totalNoLeidos = mensajeRepository.contarNoLeidos(receptor.getId());
         NotificacionDto notificacion = new NotificacionDto(
                 conversacion.getId(),
@@ -164,14 +179,59 @@ public class ChatService {
         return mensajeDto;
     }
 
-    // ─── Marcar mensajes como leídos ─────────────────────────────────────
     @Transactional
     public void marcarLeidos(String emailActual, Long conversacionId) {
         User yo = obtenerUsuarioPorEmail(emailActual);
         mensajeRepository.marcarComoLeidos(conversacionId, yo.getId());
     }
 
-    // ─── Helpers privados ─────────────────────────────────────────────────
+    @Transactional
+    public ConversacionDetalleDto obtenerConversacionPorId(String emailActual, Long conversacionId) {
+        User yo = obtenerUsuarioPorEmail(emailActual);
+
+        Conversacion conversacion = conversacionRepository.findById(conversacionId)
+                .orElseThrow(() -> new RuntimeException("Conversación no encontrada: " + conversacionId));
+
+        boolean esParticipante =
+                conversacion.getUsuario1().getId().equals(yo.getId()) ||
+                        conversacion.getUsuario2().getId().equals(yo.getId());
+
+        if (!esParticipante) {
+            throw new SecurityException("No tienes acceso a esta conversación.");
+        }
+
+        mensajeRepository.marcarComoLeidos(conversacionId, yo.getId());
+
+        List<MensajeDto> mensajes = mensajeRepository
+                .findByConversacionIdOrderByEnviadoEnAsc(conversacionId)
+                .stream()
+                .map(this::toMensajeDto)
+                .toList();
+
+        // ── MÉTRICA: duración de conversación ─────────────────────────── NUEVO
+        List<Mensaje> todos = mensajeRepository
+                .findByConversacionIdOrderByEnviadoEnAsc(conversacionId);
+
+        if (todos.size() >= 2) {
+            Instant inicio = todos.get(0).getEnviadoEn().toInstant(ZoneOffset.UTC);
+            Instant fin    = todos.get(todos.size() - 1).getEnviadoEn().toInstant(ZoneOffset.UTC);
+            chatMetricasService.registrarDuracionConversacion(inicio, fin);
+        }
+        // ── FIN MÉTRICA ───────────────────────────────────────────────────
+
+        User otro = conversacion.getUsuario1().getId().equals(yo.getId())
+                ? conversacion.getUsuario2()
+                : conversacion.getUsuario1();
+
+        return new ConversacionDetalleDto(
+                conversacion.getId(),
+                otro.getId(),
+                otro.getNombre(),
+                otro.getApellido(),
+                mensajes
+        );
+    }
+
     private Conversacion crearConversacion(User u1, User u2) {
         Conversacion nueva = Conversacion.builder()
                 .usuario1(u1)
@@ -201,50 +261,6 @@ public class ChatService {
                 m.getContenido(),
                 m.getEnviadoEn(),
                 m.isLeido()
-        );
-    }
-
-    // ─── Agregar este método dentro de ChatService.java ───────────────────────
-
-    /**
-     * Carga una conversación existente por su ID.
-     * Verifica que el usuario autenticado sea participante.
-     */
-    @Transactional
-    public ConversacionDetalleDto obtenerConversacionPorId(String emailActual, Long conversacionId) {
-        User yo = obtenerUsuarioPorEmail(emailActual);
-
-        Conversacion conversacion = conversacionRepository.findById(conversacionId)
-                .orElseThrow(() -> new RuntimeException("Conversación no encontrada: " + conversacionId));
-
-        // Verificar que el usuario sea participante
-        boolean esParticipante =
-                conversacion.getUsuario1().getId().equals(yo.getId()) ||
-                        conversacion.getUsuario2().getId().equals(yo.getId());
-
-        if (!esParticipante) {
-            throw new SecurityException("No tienes acceso a esta conversación.");
-        }
-
-        // Marcar mis mensajes como leídos
-        mensajeRepository.marcarComoLeidos(conversacionId, yo.getId());
-
-        List<MensajeDto> mensajes = mensajeRepository
-                .findByConversacionIdOrderByEnviadoEnAsc(conversacionId)
-                .stream()
-                .map(this::toMensajeDto)
-                .toList();
-
-        User otro = conversacion.getUsuario1().getId().equals(yo.getId())
-                ? conversacion.getUsuario2()
-                : conversacion.getUsuario1();
-
-        return new ConversacionDetalleDto(
-                conversacion.getId(),
-                otro.getId(),
-                otro.getNombre(),
-                otro.getApellido(),
-                mensajes
         );
     }
 }
